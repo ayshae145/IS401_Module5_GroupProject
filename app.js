@@ -1,3 +1,73 @@
+//connect to supabase
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+
+//reference our specific supabase project
+const SUPABASE_URL = "https://isiidjyncowrpxgbetiy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_NGYB1IR68X4thNbgz5x1-w_UOUxDK8C";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+// Loads all saved appliances from the Supabase database
+async function loadAppliances() {
+  // Request all appliance records from the appliances table.
+  // Sort them so the newest appliances appear first.
+  const {
+    data: savedAppliances,
+    error
+  } = await supabaseClient
+    .from("appliances")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  // If Supabase returns an error, display an error message
+  // and stop the function.
+  if (error) {
+    console.error(error);
+    showToast("Error", "Could not load appliances.");
+    return;
+  }
+
+  // Convert the database records into the format
+  // expected by the frontend appliance cards.
+  appliances = savedAppliances.map(appliance => ({
+    // Copy the appliance ID from the database.
+    id: appliance.appliance_id,
+
+    // Copy the appliance information from the database.
+    name: appliance.name,
+    type: appliance.type,
+    brand: appliance.brand || "Unknown brand",
+    model: appliance.model || "Model not added",
+    category: appliance.category,
+
+    // Format the last maintenance date.
+    // If no date exists, display a default message.
+    last: appliance.last_maintenance_date
+      ? formatDate(appliance.last_maintenance_date).full
+      : "Not yet serviced",
+
+    // These values are used by the current frontend design.
+    next: "Set a reminder",
+    status: "Up to date",
+    icon: "▤",
+    tone: "",
+
+    // Format the purchase date.
+    // If no purchase date exists, display a default message.
+    purchase: appliance.purchase_date
+      ? formatDate(appliance.purchase_date).full
+      : "Recently added"
+  }));
+
+  // Refresh the appliance cards so the saved database records
+  // are displayed on the page.
+  renderAppliances();
+}
+
 const pages = ['home','maintenance','appliances','appliance-details','professionals','professional-profile','assistant'];
 const pageNames = {home:'Overview',maintenance:'Maintenance Log',appliances:'My Appliances','appliance-details':'Appliance Details',professionals:'Professionals','professional-profile':'Professional Profile',assistant:'Maintenance Max'};
 let currentPage = 'home';
@@ -95,7 +165,115 @@ $('#openEventModal').addEventListener('click',()=>openModal('eventModal')); $('#
 $('#openApplianceModal').addEventListener('click',()=>openModal('applianceModal'));
 $$('.segment').forEach(btn=>btn.addEventListener('click',()=>{$$('.segment').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$('#calendarView').classList.toggle('hidden',btn.dataset.view!=='calendar');$('#listView').classList.toggle('hidden',btn.dataset.view!=='list');}));
 $('#eventForm').addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.target);events.push({name:data.get('name'),category:data.get('category'),date:data.get('date'),time:new Date(`2026-01-01T${data.get('time')||'09:00'}`).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),description:data.get('description')||'A new home maintenance reminder.',status:'Upcoming'});e.target.reset();closeModal('eventModal');renderCalendar();renderEvents();showToast('Event added','Your maintenance reminder is on the calendar.');});
-$('#applianceForm').addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.target);const name=data.get('name');appliances.push({name,type:data.get('type'),brand:data.get('brand')||'New appliance',model:data.get('model')||'Model not added',category:data.get('category'),last:data.get('last')?formatDate(data.get('last')).full:'Not yet serviced',next:'Set a reminder',status:'Up to date',icon:'▤',tone:'',purchase:data.get('purchase')?formatDate(data.get('purchase')).full:'Recently added'});e.target.reset();closeModal('applianceModal');renderAppliances();showToast('Appliance added','You can now track its maintenance history.');});
+
+// Runs when the user submits the Add Appliance form
+$("#applianceForm").addEventListener("submit", async event => {
+  // Prevents the browser from refreshing the page automatically
+  event.preventDefault();
+
+  // Collects all of the values entered into the form
+  const formData = new FormData(event.target);
+
+  // Gets the currently signed-in Supabase user
+  const {
+    data: { user },
+    error: userError
+  } = await supabaseClient.auth.getUser();
+
+  // Stops the process if there is no signed-in user
+  if (userError || !user) {
+    showToast(
+      "Login required",
+      "Please sign in before adding an appliance."
+    );
+
+    return;
+  }
+
+  // Creates an object using the form values.
+  // The property names must match the column names
+  // in the Supabase appliances table.
+  const applianceToInsert = {
+    user_id: user.id,
+    name: formData.get("name"),
+    type: formData.get("type"),
+    brand: formData.get("brand") || null,
+    model: formData.get("model") || null,
+    category: formData.get("category"),
+    location: null,
+    purchase_date: formData.get("purchase") || null,
+    last_maintenance_date: formData.get("last") || null
+  };
+
+  // Sends the new appliance to Supabase.
+  // insert() adds the row to the database.
+  // select() asks Supabase to return the inserted row.
+  // single() converts the returned array into one object.
+  const {
+    data: savedAppliance,
+    error
+  } = await supabaseClient
+    .from("appliances")
+    .insert(applianceToInsert)
+    .select()
+    .single();
+
+  // Displays an error if the database request failed
+  if (error) {
+    console.error(error);
+
+    showToast(
+      "Error",
+      "The appliance could not be saved."
+    );
+
+    return;
+  }
+
+  // Converts the database record into the format
+  // expected by the existing appliance cards.
+  const applianceForUI = {
+    id: savedAppliance.appliance_id,
+    name: savedAppliance.name,
+    type: savedAppliance.type,
+    brand: savedAppliance.brand || "Unknown brand",
+    model: savedAppliance.model || "Model not added",
+    category: savedAppliance.category,
+
+    last: savedAppliance.last_maintenance_date
+      ? formatDate(savedAppliance.last_maintenance_date).full
+      : "Not yet serviced",
+
+    next: "Set a reminder",
+    status: "Up to date",
+    icon: "▤",
+    tone: "",
+
+    purchase: savedAppliance.purchase_date
+      ? formatDate(savedAppliance.purchase_date).full
+      : "Recently added"
+  };
+
+  // Adds the saved appliance to the frontend array.
+  // unshift() places it at the beginning of the list.
+  appliances.unshift(applianceForUI);
+
+  // Redraws the appliance cards so the new appliance appears
+  // immediately without requiring another page refresh.
+  renderAppliances();
+
+  // Clears the form fields
+  event.target.reset();
+
+  // Closes the Add Appliance modal
+  closeModal("applianceModal");
+
+  // Shows a success message to the user
+  showToast(
+    "Appliance added",
+    "Your appliance was saved successfully."
+  );
+});
 $('#applianceSearch').addEventListener('input',renderAppliances); $('#categoryFilter').addEventListener('change',renderAppliances);
 $('#askMaxButton').addEventListener('click',()=>{navigate('assistant');setTimeout(()=>{if(selectedAppliance) askMax(`I have a question about my ${selectedAppliance.name}.`);},100);});
 $$('[data-prompt]').forEach(btn=>btn.addEventListener('click',()=>{const p=btn.dataset.prompt;if(p==='Ask About an Appliance'){addChatMessage('Which appliance would you like to ask about?','max');}else{askMax(p);}}));
@@ -109,4 +287,4 @@ $$('.time-options button').forEach(btn=>btn.addEventListener('click',()=>{$$('.t
 $('#selectTime').addEventListener('click',()=>showToast('Appointment selected','Evergreen Home Services will confirm shortly.'));
 $$('#starInput button').forEach((btn,i)=>btn.addEventListener('click',()=>$$('#starInput button').forEach((b,j)=>b.classList.toggle('selected',j<=i))));
 $('#submitReview').addEventListener('click',()=>showToast('Review submitted','Thanks for sharing your experience.'));
-renderCalendar(); renderEvents(); renderMiniEvents(); renderAppliances(); renderProfessionals();
+renderCalendar(); renderEvents(); renderMiniEvents(); loadAppliances(); renderProfessionals();

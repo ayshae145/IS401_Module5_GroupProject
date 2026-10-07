@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Havenly — Home maintenance made simple</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#" data-page="home" aria-label="Havenly home">
+          <span class="brand-mark">⌂</span>
+          <span>havenly</span>
+        </a>
+        <div class="workspace-label">YOUR HOME</div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-page="home"><span class="nav-icon">⌂</span>Home</button>
+          <button class="nav-item" data-page="maintenance"><span class="nav-icon">▣</span>Maintenance Log</button>
+          <button class="nav-item" data-page="appliances"><span class="nav-icon">▤</span>My Appliances</button>
+          <button class="nav-item" data-page="assistant"><span class="nav-icon">✦</span>Maintenance Max</button>
+          <button class="nav-item" data-page="professionals"><span class="nav-icon">♧</span>Professionals</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="help-card">
+            <span class="help-icon">?</span>
+            <div><strong>Need a hand?</strong><small>We’re here for you.</small></div>
+          </div>
+          <button class="user-row"><span class="avatar avatar-small">AE</span><span class="user-details"><strong>Aysha Entrikin</strong><small>Homeowner</small></span><span class="more">•••</span></button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="mobile-menu" id="menuButton" aria-label="Open navigation">☰</button>
+          <div class="breadcrumbs" id="breadcrumbs"><span>Home</span><span class="crumb-separator">/</span><strong>Overview</strong></div>
+          <div class="topbar-actions"><button class="icon-button" aria-label="Notifications">♢<span class="notification-dot"></span></button><button class="top-avatar">AE</button></div>
+        </header>
+
+        <div class="page-container">
+          <!-- HOME -->
+          <section class="page active-page" id="page-home">
+            <div class="hero">
+              <div class="hero-content"><span class="eyebrow light">WEDNESDAY, SEPTEMBER 30, 2026</span><h1>Take care of your home,<br /><em>without the hassle.</em></h1><p>Everything your home needs, organized in one peaceful place.</p><button class="button button-light" data-page="maintenance">View maintenance log <span>→</span></button></div>
+              <div class="hero-house-note"><span class="status-pulse"></span><span>Home is looking good</span></div>
+            </div>
+            <div class="section-heading welcome-heading"><div><span class="eyebrow">YOUR HOME AT A GLANCE</span><h2>Good afternoon, Aysha <span class="wave">✦</span></h2></div><button class="text-button" data-page="maintenance">See all activity <span>→</span></button></div>
+            <div class="quick-grid">
+              <button class="quick-card sage" data-page="maintenance"><span class="quick-icon">▣</span><span class="quick-card-body"><strong>Maintenance Log</strong><small>Track upcoming and completed home maintenance.</small><span class="quick-link">View log <b>→</b></span></span></button>
+              <button class="quick-card peach" data-page="appliances"><span class="quick-icon">▤</span><span class="quick-card-body"><strong>My Appliances</strong><small>Manage your appliances and maintenance history.</small><span class="quick-link">View appliances <b>→</b></span></span></button>
+              <button class="quick-card lavender" data-page="assistant"><span class="quick-icon">✦</span><span class="quick-card-body"><strong>Maintenance Max</strong><small>Get personalized maintenance help from Max.</small><span class="quick-link">Chat with Max <b>→</b></span></span></button>
+              <button class="quick-card blue" data-page="professionals"><span class="quick-icon">♧</span><span class="quick-card-body"><strong>Professionals</strong><small>Find trusted professionals for your next repair.</small><span class="quick-link">Find a pro <b>→</b></span></span></button>
+            </div>
+            <div class="dashboard-lower"><div class="upcoming-panel panel"><div class="panel-heading"><div><span class="eyebrow">NEXT UP</span><h3>Upcoming maintenance</h3></div><button class="icon-button muted" data-page="maintenance">•••</button></div><div class="mini-event-list" id="miniEventList"></div></div><div class="tip-panel"><div class="tip-orb">✦</div><span class="eyebrow">A LITTLE TIP FROM MAX</span><h3>Small checks can prevent big repairs.</h3><p>Take a moment to look at your HVAC filter this month. A clean filter helps your system work less and last longer.</p><button class="text-button" data-page="assistant">Ask Max more <span>→</span></button></div></div>
+          </section>
+
+          <!-- MAINTENANCE -->
+          <section class="page" id="page-maintenance">
+            <div class="page-heading"><div><span class="eyebrow">STAY AHEAD OF THE TO-DO LIST</span><h1>Maintenance Log</h1><p>Keep your home running smoothly, one task at a time.</p></div><button class="button button-primary" id="openEventModal"><span>＋</span> Add event</button></div>
+            <div class="toolbar"><div class="segmented"><button class="segment active" data-view="calendar">Calendar view</button><button class="segment" data-view="list">List view</button></div><div class="toolbar-right"><button class="filter-button">September 2026 <span>⌄</span></button><button class="filter-button">All categories <span>⌄</span></button></div></div>
+            <div id="calendarView"><div class="calendar-head"><button class="month-arrow">‹</button><div><h2>September 2026</h2><p>9 maintenance items this month</p></div><button class="month-arrow">›</button></div><div class="calendar-grid" id="calendarGrid"></div></div>
+            <div id="listView" class="list-view hidden"><div class="list-header"><div><span class="eyebrow">YOUR TASKS</span><h2>All maintenance</h2></div><span class="task-count">5 tasks</span></div><div class="event-list" id="eventList"></div></div>
+            <button class="floating-add" id="floatingAdd" aria-label="Add maintenance event">＋</button>
+          </section>
+
+          <!-- APPLIANCES -->
+          <section class="page" id="page-appliances">
+            <div class="page-heading"><div><span class="eyebrow">KNOW YOUR HOME</span><h1>My Appliances</h1><p>All the important details, right when you need them.</p></div><button class="button button-primary" id="openApplianceModal"><span>＋</span> Add appliance</button></div>
+            <div class="appliance-toolbar"><label class="search-box"><span>⌕</span><input id="applianceSearch" type="search" placeholder="Search appliances..." /></label><select id="categoryFilter"><option value="all">All categories</option><option value="Kitchen">Kitchen</option><option value="Laundry">Laundry</option><option value="HVAC">HVAC</option><option value="Plumbing">Plumbing</option></select><span class="result-count" id="applianceCount">5 appliances</span></div>
+            <div class="appliance-grid" id="applianceGrid"></div>
+          </section>
+
+          <!-- DETAILS -->
+          <section class="page" id="page-appliance-details">
+            <button class="back-link" data-page="appliances">← Back to appliances</button>
+            <div class="detail-hero"><div class="appliance-large-icon" id="detailIcon">▤</div><div class="detail-title"><span class="eyebrow">KITCHEN · REFRIGERATOR</span><h1 id="detailName">Samsung Smart Refrigerator</h1><p id="detailMeta">Samsung · RF28T5001SR · Purchased May 2022</p></div><span class="status-pill green" id="detailStatus">Up to date</span></div>
+            <div class="detail-grid"><div class="detail-main"><div class="panel status-summary"><div class="panel-heading"><div><span class="eyebrow">AT A GLANCE</span><h3>Maintenance status</h3></div><span class="health-score">92% <small>healthy</small></span></div><div class="status-metrics"><div><span>Last maintenance</span><strong id="detailLast">Aug 15, 2026</strong></div><div><span>Next recommended</span><strong id="detailNext">Nov 15, 2026</strong></div><div><span>Current status</span><strong class="green-text">Up to date</strong></div></div></div><div class="panel"><div class="panel-heading"><div><span class="eyebrow">KEEPING A RECORD</span><h3>Maintenance history</h3></div><button class="text-button">View all <span>→</span></button></div><div class="timeline" id="detailHistory"><div class="timeline-item"><span class="timeline-dot green-dot"></span><div><strong>Water filter replaced</strong><span>August 15, 2026 · Completed</span></div><b>✓</b></div><div class="timeline-item"><span class="timeline-dot"></span><div><strong>Coil cleaning</strong><span>May 02, 2026 · Completed</span></div><b>✓</b></div><div class="timeline-item"><span class="timeline-dot"></span><div><strong>Water filter replaced</strong><span>February 11, 2026 · Completed</span></div><b>✓</b></div></div></div></div><aside class="detail-side"><div class="max-card"><div class="max-card-top"><span class="max-avatar">✦</span><span class="eyebrow light">MAINTENANCE MAX</span></div><h3>Have a question about this appliance?</h3><p>Max can help troubleshoot, explain a repair, or create a care plan.</p><button class="button button-light full" id="askMaxButton">Ask Max about it <span>→</span></button></div><div class="panel recommended"><span class="eyebrow">COMING UP</span><h3>Recommended care</h3><div class="recommendation"><span class="rec-icon">♧</span><div><strong>Clean condenser coils</strong><span>Due in 46 days</span></div></div><div class="recommendation"><span class="rec-icon">◌</span><div><strong>Check door seals</strong><span>Due in 77 days</span></div></div></div></aside></div>
+          </section>
+
+          <!-- PROFESSIONALS -->
+          <section class="page" id="page-professionals">
+            <div class="page-heading"><div><span class="eyebrow">HELP WHEN YOU NEED IT</span><h1>Find a Professional</h1><p>Trusted local help for every corner of your home.</p></div></div>
+            <div class="category-row"><button class="category-chip active"><span>▤</span>Appliances</button><button class="category-chip"><span>♧</span>Plumbing</button><button class="category-chip"><span>♨</span>Heating & HVAC</button><button class="category-chip"><span>ϟ</span>Electrical</button><button class="category-chip"><span>⌂</span>General repair</button></div>
+            <div class="service-search panel"><div class="field"><label>Where do you need service?</label><div class="input-wrap"><span>⌖</span><input id="serviceLocation" value="Boulder, CO" /></div></div><div class="field"><label>What do you need help with?</label><div class="input-wrap"><span>⌕</span><input id="serviceNeed" value="Refrigerator repair" /></div></div><div class="field date-field"><label>When do you need service?</label><div class="input-wrap"><span>▣</span><input type="date" value="2026-10-03" /></div></div><button class="button button-primary" id="findProfessionals">Find professionals <span>→</span></button></div>
+            <div class="results-heading"><div><span class="eyebrow">RECOMMENDED FOR YOU</span><h2>Professionals near Boulder</h2></div><span class="result-count">12 results</span></div><div class="professional-layout"><div class="professional-list" id="professionalList"></div><div class="map-card"><div class="map-grid"></div><span class="map-label label-one">Evergreen Home</span><span class="map-label label-two">FixRight Co.</span><span class="map-label label-three">You</span><div class="map-pin pin-one">♧</div><div class="map-pin pin-two">♧</div><div class="map-pin pin-you">●</div><div class="map-controls"><button>＋</button><button>−</button></div></div></div>
+          </section>
+
+          <!-- PROFILE -->
+          <section class="page" id="page-professional-profile">
+            <button class="back-link" data-page="professionals">← Back to professionals</button>
+            <div class="profile-hero"><div class="company-logo">E</div><div class="profile-title"><span class="eyebrow">APPLIANCE SPECIALIST · BOULDER, CO</span><h1>Evergreen Home Services</h1><div class="rating-line"><strong>★ 4.9</strong><span>128 reviews</span><span class="verified">✓ Verified</span></div></div><button class="button button-primary" id="bookService">Book service <span>→</span></button></div>
+            <div class="profile-grid"><div class="profile-main"><div class="panel"><div class="panel-heading"><div><span class="eyebrow">WHAT WE DO</span><h3>Services offered</h3></div></div><div class="service-tags"><span>Refrigerator repair</span><span>Dishwasher repair</span><span>Washer / dryer repair</span><span>Preventative maintenance</span></div><p class="profile-copy">We’re a small, local team dedicated to keeping your home running beautifully. Our technicians explain what’s happening in plain language and leave your space cleaner than we found it.</p></div><div class="panel"><div class="panel-heading"><div><span class="eyebrow">WHAT CUSTOMERS SAY</span><h3>Recent reviews</h3></div><button class="text-button">Read all <span>→</span></button></div><div class="review"><div class="review-top"><span class="avatar">JM</span><div><strong>Jordan M.</strong><span>Dishwasher repair · Sep 12, 2026</span></div><b>★★★★★</b></div><p>“Technician arrived on time and explained exactly what needed to be replaced. Friendly, tidy, and fair.”</p></div><div class="review"><div class="review-top"><span class="avatar sand">KL</span><div><strong>Kim L.</strong><span>Refrigerator repair · Aug 28, 2026</span></div><b>★★★★★</b></div><p>“They had the part with them and got our fridge back up and running in one visit.”</p></div></div><div class="panel leave-review"><div><span class="eyebrow">SHARE YOUR EXPERIENCE</span><h3>Leave a review</h3></div><div class="star-input" id="starInput"><button>★</button><button>★</button><button>★</button><button>★</button><button>★</button></div><div class="review-fields"><input placeholder="Service performed" /><select><option>Very satisfied</option><option>Satisfied</option><option>Neutral</option></select><textarea placeholder="Tell us about your experience..."></textarea></div><button class="button button-primary" id="submitReview">Submit review</button></div></div><aside class="profile-side"><div class="panel contact-panel"><span class="eyebrow">CONTACT & HOURS</span><div class="contact-row"><span>⌖</span><div><strong>1420 Pearl St</strong><small>Boulder, CO 80302</small></div></div><div class="contact-row"><span>♧</span><div><strong>(303) 555-0184</strong><small>Call or text</small></div></div><div class="contact-row"><span>◷</span><div><strong>Open today</strong><small>8:00 AM – 6:00 PM</small></div></div><a href="#" class="website-link">evergreenhome.co ↗</a></div><div class="panel availability"><span class="eyebrow">NEXT AVAILABLE</span><h3>Choose a time</h3><div class="date-options"><button class="date-option active"><strong>Fri</strong><b>03</b><small>Oct</small></button><button class="date-option"><strong>Sat</strong><b>04</b><small>Oct</small></button><button class="date-option"><strong>Mon</strong><b>06</b><small>Oct</small></button></div><div class="time-options"><button>9:00 AM</button><button>11:30 AM</button><button>2:00 PM</button><button>4:30 PM</button></div><button class="button button-primary full" id="selectTime">Select appointment time</button></div></aside></div>
+          </section>
+
+          <!-- AI ASSISTANT -->
+          <section class="page" id="page-assistant">
+            <div class="assistant-layout"><div class="assistant-main"><div class="assistant-heading"><div class="max-avatar big">✦</div><div><span class="eyebrow">YOUR HOME’S SIDEKICK</span><h1>Maintenance Max</h1><p>Your AI home maintenance assistant</p></div><span class="online-dot">● Online</span></div><div class="chat-window" id="chatWindow"><div class="chat-welcome" id="chatWelcome"><div class="max-avatar medium">✦</div><h2>Hi Aysha, I’m Max.</h2><p>What can I help you with around the house today?</p><div class="suggestion-grid"><button data-prompt="Compare Repair Quotes">Compare repair quotes <span>→</span></button><button data-prompt="Find a Professional">Find a professional <span>→</span></button><button data-prompt="Diagnose a Problem">Diagnose a problem <span>→</span></button><button data-prompt="Create a Maintenance Schedule">Create a maintenance schedule <span>→</span></button><button data-prompt="Ask About an Appliance">Ask about an appliance <span>→</span></button></div></div></div><form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Ask Max anything about your home..." autocomplete="off" /><button aria-label="Send message">↑</button></form><p class="disclaimer">Max can make mistakes. For urgent or dangerous issues, contact a licensed professional.</p></div><aside class="assistant-side panel"><span class="eyebrow">YOUR HOME CONTEXT</span><h3>Max knows your home</h3><p>Ask questions about an appliance and Max will use its care history to give more helpful guidance.</p><div class="context-list"><button class="context-appliance" data-appliance="Samsung Smart Refrigerator"><span class="mini-appliance-icon">▤</span><div><strong>Samsung Refrigerator</strong><small>Last serviced Aug 15</small></div><span>→</span></button><button class="context-appliance" data-appliance="Carrier HVAC System"><span class="mini-appliance-icon hvac">♨</span><div><strong>Carrier HVAC System</strong><small>Last serviced Jun 22</small></div><span>→</span></button></div><button class="text-button" data-page="appliances">View all appliances <span>→</span></button></aside></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="eventModal"><div class="modal"><button class="modal-close" data-close="eventModal">×</button><span class="eyebrow">ADD TO YOUR HOME PLAN</span><h2>Add maintenance event</h2><p class="modal-subtitle">A small reminder today can save a bigger headache later.</p><form id="eventForm"><div class="form-grid"><label>Event name<input name="name" required placeholder="e.g. Clean dryer vent" /></label><label>Category or appliance<select name="category"><option>HVAC</option><option>Kitchen</option><option>Laundry</option><option>Plumbing</option><option>General</option></select></label><label>Date<input name="date" type="date" required value="2026-10-01" /></label><label>Time<input name="time" type="time" value="09:00" /></label></div><label>Description<textarea name="description" placeholder="Add a helpful note..."></textarea></label><div class="modal-actions"><button type="button" class="button button-ghost" data-close="eventModal">Cancel</button><button type="submit" class="button button-primary">Save event</button></div></form></div></div>
+    <div class="modal-backdrop" id="applianceModal"><div class="modal"><button class="modal-close" data-close="applianceModal">×</button><span class="eyebrow">ADD TO YOUR HOME</span><h2>Add appliance</h2><p class="modal-subtitle">Keep the details handy for future care and repairs.</p><form id="applianceForm"><div class="form-grid"><label>Appliance name<input name="name" required placeholder="e.g. Bosch Dishwasher" /></label><label>Appliance type<input name="type" required placeholder="e.g. Dishwasher" /></label><label>Brand<input name="brand" placeholder="e.g. Bosch" /></label><label>Model<input name="model" placeholder="e.g. SHPM65Z55N" /></label><label>Category<select name="category"><option>Kitchen</option><option>Laundry</option><option>HVAC</option><option>Plumbing</option><option>General</option></select></label><label>Purchase date<input name="purchase" type="date" /></label></div><label>Last maintenance date<input name="last" type="date" /></label><div class="modal-actions"><button type="button" class="button button-ghost" data-close="applianceModal">Cancel</button><button type="submit" class="button button-primary">Save appliance</button></div></form></div></div>
+    <div class="toast" id="toast"><span>✓</span><div><strong id="toastTitle">Saved</strong><small id="toastMessage">Your changes have been saved.</small></div></div>
+    <script src="app.js"></script>
+  </body>
+</html>

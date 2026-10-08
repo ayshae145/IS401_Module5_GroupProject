@@ -1,10 +1,7 @@
-//connect to supabase
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="app.js"></script>
+const SUPABASE_URL = "https://bspemalirnvoomqtgwjd.supabase.co";
 
-//reference our specific supabase project
-const SUPABASE_URL = "https://isiidjyncowrpxgbetiy.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_NGYB1IR68X4thNbgz5x1-w_UOUxDK8C";
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_Wvv2VOeFPJbrq92p5M0vAA_1uqt5E3J";
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
@@ -25,11 +22,11 @@ async function loadAppliances() {
 
   // If Supabase returns an error, display an error message
   // and stop the function.
-  if (error) {
-    console.error(error);
-    showToast("Error", "Could not load appliances.");
+if (error) {
+    console.error("Supabase error:", error);
+    showToast("Error", error.message);
     return;
-  }
+}
 
   // Convert the database records into the format
   // expected by the frontend appliance cards.
@@ -174,33 +171,17 @@ $("#applianceForm").addEventListener("submit", async event => {
   // Collects all of the values entered into the form
   const formData = new FormData(event.target);
 
-  // Gets the currently signed-in Supabase user
-  const {
-    data: { user },
-    error: userError
-  } = await supabaseClient.auth.getUser();
 
-  // Stops the process if there is no signed-in user
-  if (userError || !user) {
-    showToast(
-      "Login required",
-      "Please sign in before adding an appliance."
-    );
-
-    return;
-  }
 
   // Creates an object using the form values.
   // The property names must match the column names
   // in the Supabase appliances table.
   const applianceToInsert = {
-    user_id: user.id,
     name: formData.get("name"),
     type: formData.get("type"),
     brand: formData.get("brand") || null,
     model: formData.get("model") || null,
     category: formData.get("category"),
-    location: null,
     purchase_date: formData.get("purchase") || null,
     last_maintenance_date: formData.get("last") || null
   };
@@ -287,4 +268,9 @@ $$('.time-options button').forEach(btn=>btn.addEventListener('click',()=>{$$('.t
 $('#selectTime').addEventListener('click',()=>showToast('Appointment selected','Evergreen Home Services will confirm shortly.'));
 $$('#starInput button').forEach((btn,i)=>btn.addEventListener('click',()=>$$('#starInput button').forEach((b,j)=>b.classList.toggle('selected',j<=i))));
 $('#submitReview').addEventListener('click',()=>showToast('Review submitted','Thanks for sharing your experience.'));
-renderCalendar(); renderEvents(); renderMiniEvents(); loadAppliances(); renderProfessionals();
+
+renderCalendar();
+renderEvents();
+renderMiniEvents();
+loadAppliances();
+renderProfessionals();

@@ -21,10 +21,28 @@ Database: Supabase Postgres database
 
 ## Vertical slice:
 
+The "Add an Appliance" button is working fully. It is located under the "My Appliances" tab.
+
 
 ## How to Get It Running
 
 1. Make sure Git and Visual Studio Code are installed on your computer.
 
 2. Clone the GitHub repository to your computer:
-   https://github.com/ayshae145/IS401_Module5_GroupProject.git
+   ```bash
+   git clone https://github.com/ayshae145/IS401_Module5_GroupProject.git
+
+3. Open the IS401_Module5_GroupProject folder in Visual Studio Code.
+
+4. Make sure the project contains the following files:
+   - index.html
+   - styles.css
+   - app.js
+
+5. Open the index.html file in a web browser.
+
+6. The Havenly website should now be running locally in your browser.
+
+7. Navigate to the My Appliances tab to test the vertical slice.
+
+8. Click Add appliance, enter the appliance information, and submit the form. The appliance should be saved and displayed on the My Appliances page.

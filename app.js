@@ -93,17 +93,34 @@ const $ = (selector, parent=document) => parent.querySelector(selector);
 const $$ = (selector, parent=document) => [...parent.querySelectorAll(selector)];
 const formatDate = (dateString) => { const d = new Date(`${dateString}T12:00:00`); return {month:d.toLocaleString('en-US',{month:'short'}).toUpperCase(), day:d.getDate(), full:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}; };
 
-function navigate(page){
-  if(!pages.includes(page)) page = 'home';
+function navigate(page, updateHistory = true) {
+  if (!pages.includes(page)) page = 'home';
+
+  if (updateHistory && location.hash !== `#${page}`) {
+    history.pushState(null, '', `#${page}`);
+  }
+
   currentPage = page;
   pages.forEach(p => $(`#page-${p}`)?.classList.toggle('active-page', p === page));
-  $$('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === page || (page === 'appliance-details' && item.dataset.page === 'appliances') || (page === 'professional-profile' && item.dataset.page === 'professionals')));
-  $('#breadcrumbs').innerHTML = `<span>Home</span><span class="crumb-separator">/</span><strong>${pageNames[page]}</strong>`;
+  $$('.nav-item').forEach(item =>
+    item.classList.toggle(
+      'active',
+      item.dataset.page === page ||
+      (page === 'appliance-details' && item.dataset.page === 'appliances') ||
+      (page === 'professional-profile' && item.dataset.page === 'professionals')
+    )
+  );
+  $('#breadcrumbs').innerHTML =
+    `<span>Home</span><span class="crumb-separator">/</span><strong>${pageNames[page]}</strong>`;
   $('#sidebar').classList.remove('open');
-  window.scrollTo({top:0,behavior:'smooth'});
-  if(page === 'maintenance'){ renderCalendar(); renderEvents(); }
-  if(page === 'appliances') renderAppliances();
-  if(page === 'professionals') renderProfessionals();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (page === 'maintenance') {
+    renderCalendar();
+    renderEvents();
+  }
+  if (page === 'appliances') renderAppliances();
+  if (page === 'professionals') renderProfessionals();
 }
 
 function showToast(title, message){ $('#toastTitle').textContent=title; $('#toastMessage').textContent=message; $('#toast').classList.add('show'); setTimeout(()=>$('#toast').classList.remove('show'),3200); }
@@ -157,6 +174,11 @@ function askMax(text){
 }
 
 document.addEventListener('click', e=>{ const pageTarget=e.target.closest('[data-page]'); if(pageTarget){e.preventDefault();navigate(pageTarget.dataset.page);} const close=e.target.closest('[data-close]'); if(close)closeModal(close.dataset.close); if(e.target.classList.contains('modal-backdrop'))e.target.classList.remove('open'); });
+
+window.addEventListener('popstate', () => {
+  navigate(location.hash.slice(1) || 'home', false);
+});
+
 $('#menuButton').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));
 $('#openEventModal').addEventListener('click',()=>openModal('eventModal')); $('#floatingAdd').addEventListener('click',()=>openModal('eventModal'));
 $('#openApplianceModal').addEventListener('click',()=>openModal('applianceModal'));
@@ -269,6 +291,7 @@ $('#selectTime').addEventListener('click',()=>showToast('Appointment selected','
 $$('#starInput button').forEach((btn,i)=>btn.addEventListener('click',()=>$$('#starInput button').forEach((b,j)=>b.classList.toggle('selected',j<=i))));
 $('#submitReview').addEventListener('click',()=>showToast('Review submitted','Thanks for sharing your experience.'));
 
+navigate(location.hash.slice(1) || 'home', false);
 renderCalendar();
 renderEvents();
 renderMiniEvents();

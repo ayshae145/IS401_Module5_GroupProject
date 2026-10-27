@@ -29,7 +29,16 @@
             <span class="help-icon">?</span>
             <div><strong>Need a hand?</strong><small>We’re here for you.</small></div>
           </div>
-          <button class="user-row"><span class="avatar avatar-small">AE</span><span class="user-details"><strong>Aysha Entrikin</strong><small>Homeowner</small></span><span class="more">•••</span></button>
+        <button class="user-row" id="accountSettingsButton" type="button">
+          <span class="avatar avatar-small">A</span>
+
+          <span class="user-details">
+            <strong id="sidebarUsername">ayshae</strong>
+            <small>Homeowner</small>
+          </span>
+
+          <span class="more">•••</span>
+        </button>
         </div>
       </aside>
 
@@ -47,7 +56,12 @@
               <div class="hero-content"><span class="eyebrow light">WEDNESDAY, SEPTEMBER 30, 2026</span><h1>Take care of your home,<br /><em>without the hassle.</em></h1><p>Everything your home needs, organized in one peaceful place.</p><button class="button button-light" data-page="maintenance">View maintenance log <span>→</span></button></div>
               <div class="hero-house-note"><span class="status-pulse"></span><span>Home is looking good</span></div>
             </div>
-            <div class="section-heading welcome-heading"><div><span class="eyebrow">YOUR HOME AT A GLANCE</span><h2>Good afternoon, Aysha <span class="wave">✦</span></h2></div><button class="text-button" data-page="maintenance">See all activity <span>→</span></button></div>
+            <div class="section-heading welcome-heading"><div><span class="eyebrow">YOUR HOME AT A GLANCE</span>
+              <h2>
+  Good afternoon, <span id="homeUsername">ayshae</span>
+  <span class="wave">✦</span>
+</h2>
+            </div><button class="text-button" data-page="maintenance">See all activity <span>→</span></button></div>
             <div class="quick-grid">
               <button class="quick-card sage" data-page="maintenance"><span class="quick-icon">▣</span><span class="quick-card-body"><strong>Maintenance Log</strong><small>Track upcoming and completed home maintenance.</small><span class="quick-link">View log <b>→</b></span></span></button>
               <button class="quick-card peach" data-page="appliances"><span class="quick-icon">▤</span><span class="quick-card-body"><strong>My Appliances</strong><small>Manage your appliances and maintenance history.</small><span class="quick-link">View appliances <b>→</b></span></span></button>
@@ -97,7 +111,9 @@
 
           <!-- AI ASSISTANT -->
           <section class="page" id="page-assistant">
-            <div class="assistant-layout"><div class="assistant-main"><div class="assistant-heading"><div class="max-avatar big">✦</div><div><span class="eyebrow">YOUR HOME’S SIDEKICK</span><h1>Maintenance Max</h1><p>Your AI home maintenance assistant</p></div><span class="online-dot">● Online</span></div><div class="chat-window" id="chatWindow"><div class="chat-welcome" id="chatWelcome"><div class="max-avatar medium">✦</div><h2>Hi Aysha, I’m Max.</h2><p>What can I help you with around the house today?</p><div class="suggestion-grid"><button data-prompt="Compare Repair Quotes">Compare repair quotes <span>→</span></button><button data-prompt="Find a Professional">Find a professional <span>→</span></button><button data-prompt="Diagnose a Problem">Diagnose a problem <span>→</span></button><button data-prompt="Create a Maintenance Schedule">Create a maintenance schedule <span>→</span></button><button data-prompt="Ask About an Appliance">Ask about an appliance <span>→</span></button></div></div></div><form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Ask Max anything about your home..." autocomplete="off" /><button aria-label="Send message">↑</button></form><p class="disclaimer">Max can make mistakes. For urgent or dangerous issues, contact a licensed professional.</p></div><aside class="assistant-side panel"><span class="eyebrow">YOUR HOME CONTEXT</span><h3>Max knows your home</h3><p>Ask questions about an appliance and Max will use its care history to give more helpful guidance.</p><div class="context-list"><button class="context-appliance" data-appliance="Samsung Smart Refrigerator"><span class="mini-appliance-icon">▤</span><div><strong>Samsung Refrigerator</strong><small>Last serviced Aug 15</small></div><span>→</span></button><button class="context-appliance" data-appliance="Carrier HVAC System"><span class="mini-appliance-icon hvac">♨</span><div><strong>Carrier HVAC System</strong><small>Last serviced Jun 22</small></div><span>→</span></button></div><button class="text-button" data-page="appliances">View all appliances <span>→</span></button></aside></div>
+            <div class="assistant-layout"><div class="assistant-main"><div class="assistant-heading"><div class="max-avatar big">✦</div><div><span class="eyebrow">YOUR HOME’S SIDEKICK</span><h1>Maintenance Max</h1><p>Your AI home maintenance assistant</p></div><span class="online-dot">● Online</span></div><div class="chat-window" id="chatWindow"><div class="chat-welcome" id="chatWelcome"><div class="max-avatar medium">✦</div>
+            <h2>Hi <span id="maxUsername">ayshae</span>, I’m Max.</h2>
+            <p>What can I help you with around the house today?</p><div class="suggestion-grid"><button data-prompt="Compare Repair Quotes">Compare repair quotes <span>→</span></button><button data-prompt="Find a Professional">Find a professional <span>→</span></button><button data-prompt="Diagnose a Problem">Diagnose a problem <span>→</span></button><button data-prompt="Create a Maintenance Schedule">Create a maintenance schedule <span>→</span></button><button data-prompt="Ask About an Appliance">Ask about an appliance <span>→</span></button></div></div></div><form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Ask Max anything about your home..." autocomplete="off" /><button aria-label="Send message">↑</button></form><p class="disclaimer">Max can make mistakes. For urgent or dangerous issues, contact a licensed professional.</p></div><aside class="assistant-side panel"><span class="eyebrow">YOUR HOME CONTEXT</span><h3>Max knows your home</h3><p>Ask questions about an appliance and Max will use its care history to give more helpful guidance.</p><div class="context-list"><button class="context-appliance" data-appliance="Samsung Smart Refrigerator"><span class="mini-appliance-icon">▤</span><div><strong>Samsung Refrigerator</strong><small>Last serviced Aug 15</small></div><span>→</span></button><button class="context-appliance" data-appliance="Carrier HVAC System"><span class="mini-appliance-icon hvac">♨</span><div><strong>Carrier HVAC System</strong><small>Last serviced Jun 22</small></div><span>→</span></button></div><button class="text-button" data-page="appliances">View all appliances <span>→</span></button></aside></div>
           </section>
         </div>
       </main>
@@ -105,6 +121,144 @@
 
     <div class="modal-backdrop" id="eventModal"><div class="modal"><button class="modal-close" data-close="eventModal">×</button><span class="eyebrow">ADD TO YOUR HOME PLAN</span><h2>Add maintenance event</h2><p class="modal-subtitle">A small reminder today can save a bigger headache later.</p><form id="eventForm"><div class="form-grid"><label>Event name<input name="name" required placeholder="e.g. Clean dryer vent" /></label><label>Category or appliance<select name="category"><option>HVAC</option><option>Kitchen</option><option>Laundry</option><option>Plumbing</option><option>General</option></select></label><label>Date<input name="date" type="date" required value="2026-10-01" /></label><label>Time<input name="time" type="time" value="09:00" /></label></div><label>Description<textarea name="description" placeholder="Add a helpful note..."></textarea></label><div class="modal-actions"><button type="button" class="button button-ghost" data-close="eventModal">Cancel</button><button type="submit" class="button button-primary">Save event</button></div></form></div></div>
     <div class="modal-backdrop" id="applianceModal"><div class="modal"><button class="modal-close" data-close="applianceModal">×</button><span class="eyebrow">ADD TO YOUR HOME</span><h2>Add appliance</h2><p class="modal-subtitle">Keep the details handy for future care and repairs.</p><form id="applianceForm"><div class="form-grid"><label>Appliance name<input name="name" required placeholder="e.g. Bosch Dishwasher" /></label><label>Appliance type<input name="type" required placeholder="e.g. Dishwasher" /></label><label>Brand<input name="brand" placeholder="e.g. Bosch" /></label><label>Model<input name="model" placeholder="e.g. SHPM65Z55N" /></label><label>Category<select name="category"><option>Kitchen</option><option>Laundry</option><option>HVAC</option><option>Plumbing</option><option>General</option></select></label><label>Purchase date<input name="purchase" type="date" /></label></div><label>Last maintenance date<input name="last" type="date" /></label><div class="modal-actions"><button type="button" class="button button-ghost" data-close="applianceModal">Cancel</button><button type="submit" class="button button-primary">Save appliance</button></div></form></div></div>
+    <!-- ACCOUNT SETTINGS POPUP -->
+
+<div class="modal-backdrop" id="accountModal">
+
+  <div class="modal account-modal">
+
+    <!-- Close button -->
+    <button
+      class="modal-close"
+      type="button"
+      data-close="accountModal"
+      aria-label="Close account settings"
+    >
+      ×
+    </button>
+
+    <span class="eyebrow">YOUR HAVENLY ACCOUNT</span>
+
+    <h2>Account Settings</h2>
+
+    <p class="modal-subtitle">
+      Manage your account information.
+    </p>
+
+    <form id="accountForm">
+
+      <!-- PROFILE INFORMATION -->
+
+      <h3 class="account-section-title">
+        Profile Information
+      </h3>
+
+      <div class="account-fields">
+
+        <label>
+          Username
+
+          <input
+            type="text"
+            name="username"
+            id="accountUsername"
+            placeholder="Enter username"
+            minlength="3"
+            maxlength="30"
+            pattern="[A-Za-z0-9_]+"
+            title="Use letters, numbers, or underscores."
+            required
+          />
+        </label>
+
+        <label>
+          ZIP Code
+
+          <input
+            type="text"
+            name="zipCode"
+            id="accountZip"
+            placeholder="Enter ZIP code"
+            pattern="[0-9]{5}"
+            maxlength="5"
+            inputmode="numeric"
+            title="Enter a five-digit ZIP code."
+            required
+          />
+        </label>
+
+      </div>
+
+      <p class="account-help-text">
+        Your ZIP code helps us find maintenance
+        professionals near your home.
+      </p>
+
+      <!-- SECURITY -->
+
+      <h3 class="account-section-title">
+        Security
+      </h3>
+
+      <div class="account-fields">
+
+        <label>
+          New Password
+
+          <input
+            type="password"
+            id="accountPassword"
+            placeholder="Coming soon"
+            autocomplete="new-password"
+            disabled
+          />
+        </label>
+
+        <label>
+          Confirm New Password
+
+          <input
+            type="password"
+            id="accountConfirmPassword"
+            placeholder="Coming soon"
+            autocomplete="new-password"
+            disabled
+          />
+        </label>
+
+      </div>
+
+      <p class="account-help-text">
+        Password changes will be available
+        when account sign-in is enabled.
+      </p>
+
+      <!-- BUTTONS -->
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="button button-ghost"
+          data-close="accountModal"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="button button-primary"
+        >
+          Save Changes
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
     <div class="toast" id="toast"><span>✓</span><div><strong id="toastTitle">Saved</strong><small id="toastMessage">Your changes have been saved.</small></div></div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>

@@ -297,3 +297,174 @@ renderEvents();
 renderMiniEvents();
 loadAppliances();
 renderProfessionals();
+
+// ====================================
+// ACCOUNT SETTINGS
+// ====================================
+
+// Default account information
+const defaultAccount = {
+  username: "ayshae",
+  zipCode: "80302"
+};
+
+// Load saved account information
+function loadAccount() {
+
+  const savedAccount = localStorage.getItem("havenlyAccount");
+
+  if (savedAccount) {
+    try {
+      const parsedAccount = JSON.parse(savedAccount);
+
+      if (
+        parsedAccount &&
+        typeof parsedAccount.username === "string" &&
+        typeof parsedAccount.zipCode === "string" &&
+        /^[A-Za-z0-9_]{3,30}$/.test(parsedAccount.username) &&
+        /^[0-9]{5}$/.test(parsedAccount.zipCode)
+      ) {
+        return {
+          username: parsedAccount.username,
+          zipCode: parsedAccount.zipCode
+        };
+      }
+    } catch (error) {
+      console.error("Could not load account:", error);
+    }
+  }
+
+  return { ...defaultAccount };
+}
+
+// Store current account information
+let userAccount = loadAccount();
+
+
+// ====================================
+// UPDATE USERNAME THROUGHOUT THE APP
+// ====================================
+
+function updateAccountDisplay() {
+
+  // Get the current username
+  const username = userAccount.username;
+
+  // Update username in sidebar
+  $("#sidebarUsername").textContent = username;
+
+  // Update homepage greeting
+  $("#homeUsername").textContent = username;
+
+  // Update Maintenance Max greeting
+  const maxUsername = $("#maxUsername");
+
+  if (maxUsername) {
+    maxUsername.textContent = username;
+  }
+
+  // Get first letter for profile icon
+  const initial = username.charAt(0).toUpperCase();
+
+  // Update sidebar avatar
+  $(".avatar-small").textContent = initial;
+
+  // Update top-right avatar
+  $(".top-avatar").textContent = initial;
+
+}
+
+// ====================================
+// OPEN ACCOUNT SETTINGS
+// ====================================
+
+$("#accountSettingsButton").addEventListener("click", () => {
+
+  // Fill inputs with saved information
+  $("#accountUsername").value = userAccount.username;
+
+  $("#accountZip").value = userAccount.zipCode;
+
+  // Open popup
+  openModal("accountModal");
+
+});
+
+
+// ====================================
+// SAVE ACCOUNT SETTINGS
+// ====================================
+
+$("#accountForm").addEventListener("submit", event => {
+
+  // Prevent page refresh
+  event.preventDefault();
+
+  // Get values from form
+  const username = $("#accountUsername").value.trim();
+
+  const zipCode = $("#accountZip").value.trim();
+
+  // Validate username
+  if (!/^[A-Za-z0-9_]{3,30}$/.test(username)) {
+
+    showToast(
+      "Invalid Username",
+      "Use 3–30 letters, numbers, or underscores."
+    );
+
+    return;
+  }
+
+  // Validate ZIP code
+  if (!/^[0-9]{5}$/.test(zipCode)) {
+
+    showToast(
+      "Invalid ZIP Code",
+      "Please enter a valid five-digit ZIP code."
+    );
+
+    return;
+  }
+
+  // Update account object
+  const updatedAccount = {
+    username: username,
+    zipCode: zipCode
+  };
+
+  // Save to browser storage
+  try {
+    localStorage.setItem(
+      "havenlyAccount",
+      JSON.stringify(updatedAccount)
+    );
+  } catch (error) {
+    console.error("Could not save account:", error);
+    showToast("Error", "Account settings could not be saved.");
+    return;
+  }
+
+  userAccount = updatedAccount;
+
+  // Update displayed username
+  updateAccountDisplay();
+
+  // Close popup
+  closeModal("accountModal");
+
+  // Display confirmation
+  showToast(
+    "Account Updated",
+    "Your account settings have been saved."
+  );
+
+});
+
+
+// ====================================
+// INITIALIZE ACCOUNT
+// ====================================
+
+// Display saved username when page loads
+updateAccountDisplay();

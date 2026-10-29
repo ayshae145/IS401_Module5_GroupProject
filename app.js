@@ -468,3 +468,43 @@ $("#accountForm").addEventListener("submit", event => {
 
 // Display saved username when page loads
 updateAccountDisplay();
+
+// ====================================
+// USER LOGIN
+// ====================================
+
+const loginForm = document.querySelector("#loginForm");
+const loginPage = document.querySelector("#loginPage");
+const appShell = document.querySelector(".app-shell");
+const loginMessage = document.querySelector("#loginMessage");
+
+// Show the main application after successful login
+function showMainApp() {
+  loginPage.style.display = "none";
+  appShell.style.display = "flex";
+}
+
+// Handle user sign in
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.querySelector("#loginEmail").value.trim();
+  const password = document.querySelector("#loginPassword").value;
+
+  loginMessage.textContent = "Signing in...";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    loginMessage.textContent = error.message;
+    return;
+  }
+
+  if (data.user) {
+    loginMessage.textContent = "";
+    showMainApp();
+  }
+});

@@ -10,6 +10,39 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- SIGN IN PAGE -->
+<div id="loginPage" class="login-page">
+  <div class="login-container">
+    <h1>Welcome to Havenly</h1>
+    <p>Sign in to manage your home.</p>
+
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input
+        type="email"
+        id="loginEmail"
+        placeholder="Enter your email"
+        autocomplete="email"
+        required
+      />
+
+      <label for="loginPassword">Password</label>
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+        required
+      />
+
+      <button type="submit" class="button button-primary">
+        Sign In
+      </button>
+    </form>
+
+    <p id="loginMessage" role="status"></p>
+  </div>
+</div>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar">
         <a class="brand" href="#" data-page="home" aria-label="Havenly home">

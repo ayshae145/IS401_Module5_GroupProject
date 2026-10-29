@@ -10,6 +10,77 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- SIGN IN PAGE -->
+<div id="loginPage" class="login-page">
+  <div class="login-container">
+    <h1>Welcome to Havenly</h1>
+    <p>Sign in to manage your home.</p>
+
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input
+        type="email"
+        id="loginEmail"
+        placeholder="Enter your email"
+        autocomplete="email"
+        required
+      />
+
+      <label for="loginPassword">Password</label>
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+        required
+      />
+
+      <button type="submit" class="button button-primary">
+        Sign In
+      </button>
+    </form>
+
+    <p id="loginMessage" role="status"></p>
+    <p>
+  Don't have an account?
+  <button type="button" id="showSignupButton">Sign Up</button>
+</p>
+
+<!-- SIGN UP FORM -->
+<form id="signupForm" style="display: none;">
+  <h2>Create an Account</h2>
+
+  <label for="signupEmail">Email</label>
+  <input
+    type="email"
+    id="signupEmail"
+    placeholder="Enter your email"
+    autocomplete="email"
+    required
+  />
+
+  <label for="signupPassword">Password</label>
+  <input
+    type="password"
+    id="signupPassword"
+    placeholder="Create a password"
+    autocomplete="new-password"
+    minlength="6"
+    required
+  />
+
+  <button type="submit" class="button button-primary">
+    Sign Up
+  </button>
+
+  <p id="signupMessage" role="status"></p>
+
+  <button type="button" id="backToLoginButton">
+    Back to Sign In
+  </button>
+</form>
+  </div>
+</div>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar">
         <a class="brand" href="#" data-page="home" aria-label="Havenly home">
@@ -38,6 +109,9 @@
           </span>
 
           <span class="more">•••</span>
+        </button>
+        <button type="button" id="signOutButton" class="button button-ghost">
+          Sign Out
         </button>
         </div>
       </aside>

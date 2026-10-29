@@ -41,6 +41,44 @@
     </form>
 
     <p id="loginMessage" role="status"></p>
+    <p>
+  Don't have an account?
+  <button type="button" id="showSignupButton">Sign Up</button>
+</p>
+
+<!-- SIGN UP FORM -->
+<form id="signupForm" style="display: none;">
+  <h2>Create an Account</h2>
+
+  <label for="signupEmail">Email</label>
+  <input
+    type="email"
+    id="signupEmail"
+    placeholder="Enter your email"
+    autocomplete="email"
+    required
+  />
+
+  <label for="signupPassword">Password</label>
+  <input
+    type="password"
+    id="signupPassword"
+    placeholder="Create a password"
+    autocomplete="new-password"
+    minlength="6"
+    required
+  />
+
+  <button type="submit" class="button button-primary">
+    Sign Up
+  </button>
+
+  <p id="signupMessage" role="status"></p>
+
+  <button type="button" id="backToLoginButton">
+    Back to Sign In
+  </button>
+</form>
   </div>
 </div>
     <div class="app-shell">
@@ -71,6 +109,9 @@
           </span>
 
           <span class="more">•••</span>
+        </button>
+        <button type="button" id="signOutButton" class="button button-ghost">
+          Sign Out
         </button>
         </div>
       </aside>

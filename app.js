@@ -508,3 +508,80 @@ loginForm.addEventListener("submit", async (event) => {
     showMainApp();
   }
 });
+// Switch between Sign In and Sign Up
+const signupForm = document.querySelector("#signupForm");
+const showSignupButton = document.querySelector("#showSignupButton");
+const backToLoginButton = document.querySelector("#backToLoginButton");
+
+showSignupButton.addEventListener("click", () => {
+  loginForm.style.display = "none";
+  signupForm.style.display = "flex";
+  showSignupButton.parentElement.style.display = "none";
+  loginMessage.style.display = "none";
+});
+
+backToLoginButton.addEventListener("click", () => {
+  signupForm.style.display = "none";
+  loginForm.style.display = "flex";
+  showSignupButton.parentElement.style.display = "";
+  loginMessage.style.display = "";
+});
+// Register a new Havenly user with Supabase
+signupForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.querySelector("#signupEmail").value.trim();
+  const password = document.querySelector("#signupPassword").value;
+  const signupMessage = document.querySelector("#signupMessage");
+
+  signupMessage.textContent = "Creating your account...";
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    signupMessage.textContent = error.message;
+    return;
+  }
+
+  if (data.session) {
+    signupMessage.textContent = "";
+    showMainApp();
+  } else {
+    signupMessage.textContent =
+      "Account created! Please check your email to confirm your account, then sign in.";
+  }
+});
+// Keep the user signed in after refreshing the page
+async function checkLoginSession() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error("Session error:", error.message);
+    return;
+  }
+
+  if (data.session) {
+    showMainApp();
+  }
+}
+
+// Check login status when the page loads
+checkLoginSession();
+// Sign out
+const signOutButton = document.querySelector("#signOutButton");
+
+signOutButton.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    alert("Sign out failed: " + error.message);
+    return;
+  }
+
+  appShell.style.display = "none";
+  loginPage.style.display = "flex";
+  loginForm.reset();
+});

@@ -299,95 +299,101 @@ loadAppliances();
 renderProfessionals();
 
 // ====================================
-// ACCOUNT SETTINGS
+// ACCOUNT SETTINGS - SUPABASE
 // ====================================
 
-// Default account information
-const defaultAccount = {
-  username: "ayshae",
-  zipCode: "80302"
-};
+// The currently signed-in user's account information
+let currentAccountUser = null;
 
-// Load saved account information
-function loadAccount() {
 
-  const savedAccount = localStorage.getItem("havenlyAccount");
+// ====================================
+// LOAD ACCOUNT INFORMATION
+// ====================================
 
-  if (savedAccount) {
-    try {
-      const parsedAccount = JSON.parse(savedAccount);
+async function loadAccount() {
 
-      if (
-        parsedAccount &&
-        typeof parsedAccount.username === "string" &&
-        typeof parsedAccount.zipCode === "string" &&
-        /^[A-Za-z0-9_]{3,30}$/.test(parsedAccount.username) &&
-        /^[0-9]{5}$/.test(parsedAccount.zipCode)
-      ) {
-        return {
-          username: parsedAccount.username,
-          zipCode: parsedAccount.zipCode
-        };
-      }
-    } catch (error) {
-      console.error("Could not load account:", error);
-    }
+  // Get the currently authenticated user
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error || !data.user) {
+    console.error("Unable to load account:", error);
+    return;
   }
 
-  return { ...defaultAccount };
-}
+  currentAccountUser = data.user;
 
-// Store current account information
-let userAccount = loadAccount();
+  updateAccountDisplay();
+}
 
 
 // ====================================
-// UPDATE USERNAME THROUGHOUT THE APP
+// UPDATE NAME THROUGHOUT THE APP
 // ====================================
 
 function updateAccountDisplay() {
 
-  // Get the current username
-  const username = userAccount.username;
+  if (!currentAccountUser) return;
 
-  // Update username in sidebar
-  $("#sidebarUsername").textContent = username;
+  // Retrieve the first name from Supabase metadata
+  const firstName =
+    currentAccountUser.user_metadata?.first_name || "";
 
-  // Update homepage greeting
-  $("#homeUsername").textContent = username;
+  // Use a friendly placeholder if no name exists
+  const displayName = firstName || "Your Name";
+  const greetingName = firstName || "there";
 
-  // Update Maintenance Max greeting
+  // Sidebar
+  $("#sidebarUsername").textContent = displayName;
+
+  // Homepage greeting
+  $("#homeUsername").textContent = greetingName;
+
+  // Maintenance Max greeting
   const maxUsername = $("#maxUsername");
 
   if (maxUsername) {
-    maxUsername.textContent = username;
+    maxUsername.textContent = greetingName;
   }
 
-  // Get first letter for profile icon
-  const initial = username.charAt(0).toUpperCase();
+  // Profile initials
+  const initial = firstName
+    ? firstName.charAt(0).toUpperCase()
+    : "?";
 
-  // Update sidebar avatar
   $(".avatar-small").textContent = initial;
-
-  // Update top-right avatar
   $(".top-avatar").textContent = initial;
-
 }
+
 
 // ====================================
 // OPEN ACCOUNT SETTINGS
 // ====================================
 
-$("#accountSettingsButton").addEventListener("click", () => {
+$("#accountSettingsButton").addEventListener("click", async () => {
 
-  // Fill inputs with saved information
-  $("#accountUsername").value = userAccount.username;
+  // Refresh account information from Supabase
+  await loadAccount();
 
-  $("#accountZip").value = userAccount.zipCode;
+  if (!currentAccountUser) {
+    showToast("Error", "Please sign in again.");
+    return;
+  }
 
-  // Open popup
+  // Fill form with current account information
+  $("#accountFirstName").value =
+    currentAccountUser.user_metadata?.first_name || "";
+
+  $("#accountEmail").value =
+    currentAccountUser.email || "";
+
+  $("#accountZip").value =
+    currentAccountUser.user_metadata?.zip_code || "";
+
+  // Never display an existing password
+  $("#accountPassword").value = "";
+  $("#accountConfirmPassword").value = "";
+
   openModal("accountModal");
-
 });
 
 
@@ -395,79 +401,235 @@ $("#accountSettingsButton").addEventListener("click", () => {
 // SAVE ACCOUNT SETTINGS
 // ====================================
 
-$("#accountForm").addEventListener("submit", event => {
+$("#accountForm").addEventListener("submit", async event => {
 
-  // Prevent page refresh
   event.preventDefault();
 
-  // Get values from form
-  const username = $("#accountUsername").value.trim();
+  if (!currentAccountUser) {
+    showToast("Error", "Please sign in again.");
+    return;
+  }
 
+  // Retrieve input values
+  const firstName = $("#accountFirstName").value.trim();
+  const email = $("#accountEmail").value.trim();
   const zipCode = $("#accountZip").value.trim();
 
-  // Validate username
-  if (!/^[A-Za-z0-9_]{3,30}$/.test(username)) {
+  const password = $("#accountPassword").value;
+  const confirmPassword = $("#accountConfirmPassword").value;
 
-    showToast(
-      "Invalid Username",
-      "Use 3–30 letters, numbers, or underscores."
-    );
-
+  // Validate first name
+  if (!firstName) {
+    showToast("Invalid Name", "Please enter your first name.");
     return;
   }
 
   // Validate ZIP code
   if (!/^[0-9]{5}$/.test(zipCode)) {
+    showToast("Invalid ZIP Code", "Enter a five-digit ZIP code.");
+    return;
+  }
+
+  // Validate password confirmation
+  if (password !== confirmPassword) {
+    showToast("Password Error", "Passwords do not match.");
+    return;
+  }
+
+  if (password && password.length < 8) {
+    showToast("Password Error", "Use at least eight characters.");
+    return;
+  }
+
+  // Disable save button while updating
+  const saveButton = event.target.querySelector(
+    'button[type="submit"]'
+  );
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Saving...";
+
+  try {
+
+    // ====================================
+    // UPDATE FIRST NAME AND ZIP CODE
+    // ====================================
+
+    const { error: profileError } =
+      await supabaseClient.auth.updateUser({
+        data: {
+          first_name: firstName,
+          zip_code: zipCode
+        }
+      });
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    // ====================================
+    // UPDATE EMAIL IF CHANGED
+    // ====================================
+
+    const emailChanged =
+      email !== currentAccountUser.email;
+
+    if (emailChanged) {
+
+      const { error: emailError } =
+        await supabaseClient.auth.updateUser({
+          email: email
+        });
+
+      if (emailError) {
+        throw emailError;
+      }
+    }
+
+    // ====================================
+    // UPDATE PASSWORD IF PROVIDED
+    // ====================================
+
+    if (password) {
+
+      const { error: passwordError } =
+        await supabaseClient.auth.updateUser({
+          password: password
+        });
+
+      if (passwordError) {
+        throw passwordError;
+      }
+    }
+
+    // Refresh account information
+    await loadAccount();
+
+    // Clear password fields
+    $("#accountPassword").value = "";
+    $("#accountConfirmPassword").value = "";
+
+    closeModal("accountModal");
+
+    if (emailChanged) {
+
+      showToast(
+        "Account Updated",
+        "Check your email for any required confirmation."
+      );
+
+    } else {
+
+      showToast(
+        "Account Updated",
+        "Your account information has been saved."
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error("Account update error:", error);
 
     showToast(
-      "Invalid ZIP Code",
-      "Please enter a valid five-digit ZIP code."
+      "Update Error",
+      error.message || "Unable to update account."
     );
 
-    return;
+    // Earlier updates may have succeeded, so refresh the user.
+    await loadAccount();
+
+  } finally {
+
+    saveButton.disabled = false;
+    saveButton.textContent = "Save Changes";
+
   }
-
-  // Update account object
-  const updatedAccount = {
-    username: username,
-    zipCode: zipCode
-  };
-
-  // Save to browser storage
-  try {
-    localStorage.setItem(
-      "havenlyAccount",
-      JSON.stringify(updatedAccount)
-    );
-  } catch (error) {
-    console.error("Could not save account:", error);
-    showToast("Error", "Account settings could not be saved.");
-    return;
-  }
-
-  userAccount = updatedAccount;
-
-  // Update displayed username
-  updateAccountDisplay();
-
-  // Close popup
-  closeModal("accountModal");
-
-  // Display confirmation
-  showToast(
-    "Account Updated",
-    "Your account settings have been saved."
-  );
 
 });
 
-
 // ====================================
-// INITIALIZE ACCOUNT
+// DELETE ACCOUNT
 // ====================================
+ const confirmDeleteButton = document.getElementById("confirmDeleteAccountButton");
+deleteAccountButton.addEventListener("click", () => {
+  deleteConfirmationInput.value = "";
+  confirmDeleteButton.disabled = true;
+ 
 
-// Display saved username when page loads
-updateAccountDisplay();
+  // Close Account Settings
+  closeModal("accountModal");
+
+  // Open the delete confirmation popup
+  openModal("deleteAccountModal");
+
+  // Make sure the confirmation input receives focus
+  deleteConfirmationInput.focus();
+});
+
+// Enable deletion only when the user types DELETE
+deleteConfirmationInput.addEventListener("input", () => {
+  confirmDeleteButton.disabled =
+    deleteConfirmationInput.value !== "DELETE";
+});
+
+// Delete the authenticated user's account
+confirmDeleteButton.addEventListener("click", async () => {
+  if (deleteConfirmationInput.value !== "DELETE") return;
+
+  confirmDeleteButton.disabled = true;
+  confirmDeleteButton.textContent = "Deleting...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error("Please sign in again.");
+    }
+
+    const { data, error } = await supabaseClient.functions.invoke(
+      "delete-account",
+      {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        }
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || "Account deletion failed.");
+    }
+
+    // Clear the local authentication session
+    await supabaseClient.auth.signOut({ scope: "local" });
+
+    // Return to the sign-in screen
+    closeModal("deleteAccountModal");
+
+    currentAccountUser = null;
+
+    appShell.style.display = "none";
+    loginPage.style.display = "flex";
+    loginForm.reset();
+
+    showToast("Account Deleted", "Your account has been deleted.");
+
+  } catch (error) {
+    console.error("Account deletion error:", error);
+    showToast(
+      "Deletion Failed",
+      error.message || "Please try again."
+    );
+  } finally {
+    confirmDeleteButton.disabled = false;
+    confirmDeleteButton.textContent = "Permanently Delete Account";
+  }
+});
 
 // ====================================
 // USER LOGIN
@@ -479,9 +641,14 @@ const appShell = document.querySelector(".app-shell");
 const loginMessage = document.querySelector("#loginMessage");
 
 // Show the main application after successful login
-function showMainApp() {
+async function showMainApp() {
+
   loginPage.style.display = "none";
   appShell.style.display = "flex";
+
+  // Load the signed-in user's account information
+  await loadAccount();
+
 }
 
 // Handle user sign in
@@ -580,6 +747,22 @@ signOutButton.addEventListener("click", async () => {
     alert("Sign out failed: " + error.message);
     return;
   }
+
+  // Clear the previous user's account information
+currentAccountUser = null;
+
+// Reset displayed account information
+$("#sidebarUsername").textContent = "Your Name";
+$("#homeUsername").textContent = "there";
+
+const maxUsername = $("#maxUsername");
+
+if (maxUsername) {
+  maxUsername.textContent = "there";
+}
+
+$(".avatar-small").textContent = "?";
+$(".top-avatar").textContent = "?";
 
   appShell.style.display = "none";
   loginPage.style.display = "flex";

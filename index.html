@@ -104,7 +104,7 @@
           <span class="avatar avatar-small">A</span>
 
           <span class="user-details">
-            <strong id="sidebarUsername">ayshae</strong>
+            <strong id="sidebarUsername">Your Name</strong>
             <small>Homeowner</small>
           </span>
 
@@ -132,7 +132,7 @@
             </div>
             <div class="section-heading welcome-heading"><div><span class="eyebrow">YOUR HOME AT A GLANCE</span>
               <h2>
-  Good afternoon, <span id="homeUsername">ayshae</span>
+  Good afternoon <span id="homeUsername"></span>
   <span class="wave">✦</span>
 </h2>
             </div><button class="text-button" data-page="maintenance">See all activity <span>→</span></button></div>
@@ -186,7 +186,7 @@
           <!-- AI ASSISTANT -->
           <section class="page" id="page-assistant">
             <div class="assistant-layout"><div class="assistant-main"><div class="assistant-heading"><div class="max-avatar big">✦</div><div><span class="eyebrow">YOUR HOME’S SIDEKICK</span><h1>Maintenance Max</h1><p>Your AI home maintenance assistant</p></div><span class="online-dot">● Online</span></div><div class="chat-window" id="chatWindow"><div class="chat-welcome" id="chatWelcome"><div class="max-avatar medium">✦</div>
-            <h2>Hi <span id="maxUsername">ayshae</span>, I’m Max.</h2>
+            <h2>Hi <span id="maxUsername">there</span>, I’m Max.</h2>
             <p>What can I help you with around the house today?</p><div class="suggestion-grid"><button data-prompt="Compare Repair Quotes">Compare repair quotes <span>→</span></button><button data-prompt="Find a Professional">Find a professional <span>→</span></button><button data-prompt="Diagnose a Problem">Diagnose a problem <span>→</span></button><button data-prompt="Create a Maintenance Schedule">Create a maintenance schedule <span>→</span></button><button data-prompt="Ask About an Appliance">Ask about an appliance <span>→</span></button></div></div></div><form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Ask Max anything about your home..." autocomplete="off" /><button aria-label="Send message">↑</button></form><p class="disclaimer">Max can make mistakes. For urgent or dangerous issues, contact a licensed professional.</p></div><aside class="assistant-side panel"><span class="eyebrow">YOUR HOME CONTEXT</span><h3>Max knows your home</h3><p>Ask questions about an appliance and Max will use its care history to give more helpful guidance.</p><div class="context-list"><button class="context-appliance" data-appliance="Samsung Smart Refrigerator"><span class="mini-appliance-icon">▤</span><div><strong>Samsung Refrigerator</strong><small>Last serviced Aug 15</small></div><span>→</span></button><button class="context-appliance" data-appliance="Carrier HVAC System"><span class="mini-appliance-icon hvac">♨</span><div><strong>Carrier HVAC System</strong><small>Last serviced Jun 22</small></div><span>→</span></button></div><button class="text-button" data-page="appliances">View all appliances <span>→</span></button></aside></div>
           </section>
         </div>
@@ -230,17 +230,28 @@
       <div class="account-fields">
 
         <label>
-          Username
+            First Name
+
+            <input
+              type="text"
+              name="firstName"
+              id="accountFirstName"
+              placeholder="Enter your first name"
+              maxlength="50"
+              autocomplete="given-name"
+              required
+            />
+        </label>
+
+        <label>
+          Email Address
 
           <input
-            type="text"
-            name="username"
-            id="accountUsername"
-            placeholder="Enter username"
-            minlength="3"
-            maxlength="30"
-            pattern="[A-Za-z0-9_]+"
-            title="Use letters, numbers, or underscores."
+            type="email"
+            name="email"
+            id="accountEmail"
+            placeholder="Enter your email"
+            autocomplete="email"
             required
           />
         </label>
@@ -282,10 +293,10 @@
           <input
             type="password"
             id="accountPassword"
-            placeholder="Coming soon"
+            placeholder="Leave blank to keep current password"
             autocomplete="new-password"
-            disabled
-          />
+            minlength="8"
+            />
         </label>
 
         <label>
@@ -294,17 +305,17 @@
           <input
             type="password"
             id="accountConfirmPassword"
-            placeholder="Coming soon"
+            placeholder="Confirm new password"
             autocomplete="new-password"
-            disabled
+            minlength="8"
           />
         </label>
 
       </div>
 
       <p class="account-help-text">
-        Password changes will be available
-        when account sign-in is enabled.
+        Leave the password fields blank if you do not want
+        to change your password.
       </p>
 
       <!-- BUTTONS -->
@@ -328,10 +339,86 @@
 
       </div>
 
+      <div class="delete-account-section">
+        <h3>Delete Account</h3>
+
+        <p>
+          Permanently delete your Havenly account.
+          This action cannot be undone.
+        </p>
+
+        <button
+          type="button"
+          id="deleteAccountButton"
+          class="button button-danger"
+        >
+          Delete Account
+        </button>
+      </div>
+
+             Delete Account
+        </button>
+      </div>
+
     </form>
 
-  </div>
+      </form>
 
+  </div>
+</div> <!-- Closes accountModal -->
+
+<!-- Delete Account Confirmation Popup -->
+<div class="modal-backdrop" id="deleteAccountModal">
+  <div class="modal delete-confirmation-modal">
+
+    <button
+      class="modal-close"
+      type="button"
+      data-close="deleteAccountModal"
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <h2>Delete Your Account?</h2>
+
+    <p class="modal-subtitle">
+      This will permanently delete your Havenly account.
+      You will lose access to your account information.
+    </p>
+
+    <p class="delete-warning">
+      Type <strong>DELETE</strong> below to confirm.
+    </p>
+
+    <input
+      type="text"
+      id="deleteConfirmationInput"
+      placeholder="Type DELETE"
+      autocomplete="off"
+    />
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="button button-ghost"
+        data-close="deleteAccountModal"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        id="confirmDeleteAccountButton"
+        class="button button-danger"
+        disabled
+      >
+        Permanently Delete Account
+      </button>
+    </div>
+
+  </div>
+</div>
 </div>
     <div class="toast" id="toast"><span>✓</span><div><strong id="toastTitle">Saved</strong><small id="toastMessage">Your changes have been saved.</small></div></div>
 

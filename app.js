@@ -295,7 +295,6 @@ navigate(location.hash.slice(1) || 'home', false);
 renderCalendar();
 renderEvents();
 renderMiniEvents();
-loadAppliances();
 renderProfessionals();
 
 // ====================================
@@ -649,6 +648,8 @@ async function showMainApp() {
   // Load the signed-in user's account information
   await loadAccount();
 
+  await loadAppliances();
+
 }
 
 // Handle user sign in
@@ -699,13 +700,15 @@ signupForm.addEventListener("submit", async (event) => {
 
   const email = document.querySelector("#signupEmail").value.trim();
   const password = document.querySelector("#signupPassword").value;
+  const usernameValue = document.querySelector("#signupUsername").value.trim();
   const signupMessage = document.querySelector("#signupMessage");
 
   signupMessage.textContent = "Creating your account...";
 
   const { data, error } = await supabaseClient.auth.signUp({
     email: email,
-    password: password
+    password: password,
+    options: { data: { username: usernameValue } }
   });
 
   if (error) {
@@ -750,6 +753,8 @@ signOutButton.addEventListener("click", async () => {
 
   // Clear the previous user's account information
 currentAccountUser = null;
+appliances = [];
+renderAppliances();
 
 // Reset displayed account information
 $("#sidebarUsername").textContent = "Your Name";

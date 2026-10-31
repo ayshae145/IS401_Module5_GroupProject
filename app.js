@@ -76,13 +76,7 @@ let events = [
   {name:'Water Heater Inspection', category:'Plumbing', date:'2026-10-22', time:'2:00 PM', description:'Annual inspection and pressure relief check.', status:'Upcoming'},
   {name:'Test Smoke Detectors', category:'General', date:'2026-09-12', time:'11:00 AM', description:'Test each detector and replace batteries as needed.', status:'Completed'}
 ];
-let appliances = [
-  {name:'Samsung Smart Refrigerator', type:'Refrigerator', brand:'Samsung', model:'RF28T5001SR', category:'Kitchen', last:'Aug 15, 2026', next:'Nov 15, 2026', status:'Up to date', icon:'▤', tone:'', purchase:'May 2022'},
-  {name:'Whirlpool Front Load Washer', type:'Washer', brand:'Whirlpool', model:'WFW5620HW', category:'Laundry', last:'Jul 04, 2026', next:'Oct 04, 2026', status:'Maintenance soon', icon:'◉', tone:'laundry', purchase:'Mar 2021'},
-  {name:'GE Electric Dryer', type:'Dryer', brand:'GE', model:'GFD55ESSNWW', category:'Laundry', last:'Jun 19, 2026', next:'Dec 19, 2026', status:'Up to date', icon:'◌', tone:'laundry', purchase:'Mar 2021'},
-  {name:'Carrier HVAC System', type:'HVAC System', brand:'Carrier', model:'24ACC636W003', category:'HVAC', last:'Jun 22, 2026', next:'Oct 22, 2026', status:'Maintenance soon', icon:'♨', tone:'hvac', purchase:'Apr 2020'},
-  {name:'Rheem Water Heater', type:'Water Heater', brand:'Rheem', model:'XE50T10HD50U1', category:'Plumbing', last:'Jan 12, 2026', next:'Jul 12, 2026', status:'Overdue', icon:'♧', tone:'plumbing', purchase:'Nov 2019'}
-];
+let appliances = [];
 const professionals = [
   {name:'Evergreen Home Services', logo:'E', rating:'4.9', reviews:'128 reviews', distance:'1.8 mi', availability:'Today at 4:30 PM', description:'Friendly appliance repair from a trusted local team.', category:'Appliance specialist'},
   {name:'FixRight Appliance Co.', logo:'F', rating:'4.8', reviews:'96 reviews', distance:'3.2 mi', availability:'Tomorrow at 9:00 AM', description:'Fast, honest repairs for all major appliance brands.', category:'Appliance repair'},

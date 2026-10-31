@@ -469,6 +469,71 @@ function iconFor(appliance) {
   );
 }
 
+// Ask for confirmation, delete the row from Supabase, then refresh the list.
+async function removeAppliance(applianceId) {
+  const appliance = appliances.find(
+    item => String(item.id) === String(applianceId)
+  );
+
+  if (!appliance) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Remove "' + appliance.name + '" from your appliance list?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  let deletedAppliance;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("appliances")
+      .delete()
+      .eq("appliance_id", appliance.id)
+      .select("appliance_id")
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    deletedAppliance = data;
+  } catch (error) {
+    console.error("Appliance removal error:", error);
+    showToast(
+      "Error",
+      error.message || "The appliance could not be removed."
+    );
+    return;
+  }
+
+  if (!deletedAppliance) {
+    showToast(
+      "Appliance not removed",
+      "Refresh the page and try again."
+    );
+    return;
+  }
+
+  appliances = appliances.filter(
+    item => String(item.id) !== String(appliance.id)
+  );
+
+  if (
+    selectedAppliance &&
+    String(selectedAppliance.id) === String(appliance.id)
+  ) {
+    selectedAppliance = null;
+  }
+
+  renderAppliances();
+  showToast("Appliance removed", appliance.name + " was removed.");
+}
+
 // Draw appliance cards, the loading state, or the first-appliance message.
 function renderAppliances() {
   const searchQuery = ($("#applianceSearch").value || "").toLowerCase();
@@ -550,11 +615,17 @@ function renderAppliances() {
         '">' +
           '<div class="appliance-card-top">' +
             iconFor(appliance) +
-            '<span class="status-pill ' +
-              statusClass(appliance.status) +
-            '">' +
-              appliance.status +
-            "</span>" +
+            '<div class="appliance-card-actions">' +
+              '<span class="status-pill ' +
+                statusClass(appliance.status) +
+              '">' +
+                appliance.status +
+              "</span>" +
+              '<button class="appliance-delete-button" type="button"' +
+                ' data-delete-appliance="' + appliance.id + '"' +
+                ' aria-label="Remove appliance"' +
+                ' title="Remove appliance">×</button>' +
+            "</div>" +
           "</div>" +
           "<h3>" + appliance.name + "</h3>" +
           '<span class="category">' +
@@ -580,6 +651,14 @@ function renderAppliances() {
   $$("[data-appliance-card]").forEach(card => {
     card.addEventListener("click", () => {
       openAppliance(card.dataset.applianceCard);
+    });
+  });
+
+  // Keep the remove action from also opening the appliance detail page.
+  $$("[data-delete-appliance]").forEach(button => {
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      removeAppliance(button.dataset.deleteAppliance);
     });
   });
 }

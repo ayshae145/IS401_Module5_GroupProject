@@ -376,3 +376,34 @@
     font-size: 21px;
   }
 }
+
+.appliance-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appliance-delete-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.appliance-delete-button:hover {
+  border-color: #efc6c1;
+  background: #fff4f2;
+  color: #a53e32;
+}
+
+.appliance-delete-button:focus-visible {
+  outline: 3px solid rgba(165, 62, 50, 0.2);
+  outline-offset: 2px;
+}

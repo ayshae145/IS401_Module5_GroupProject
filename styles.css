@@ -309,3 +309,70 @@
 #deleteAccountModal.open {
   display: flex;
 }
+
+/* =========================================================
+   Appliance loading and first-appliance states
+   ========================================================= */
+
+.appliance-empty-state {
+  grid-column: 1 / -1;
+  min-height: 320px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, #fff, #f1f7f3);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.appliance-empty-icon {
+  width: 68px;
+  height: 68px;
+  margin-bottom: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--sage);
+  color: var(--green);
+  font-size: 36px;
+}
+
+.appliance-empty-state h2 {
+  margin: 10px 0;
+  font-size: 24px;
+}
+
+.appliance-empty-state p {
+  max-width: 420px;
+  margin-bottom: 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.loading-spinner {
+  border: 4px solid var(--sage);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: appliance-spin 0.8s linear infinite;
+}
+
+@keyframes appliance-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .appliance-empty-state {
+    min-height: 280px;
+    padding: 32px 18px;
+  }
+
+  .appliance-empty-state h2 {
+    font-size: 21px;
+  }
+}

@@ -1,5 +1,18 @@
-const SUPABASE_URL = "https://bspemalirnvoomqtgwjd.supabase.co";
+/* =========================================================
+   Havenly app logic
+   =========================================================
+   This file connects the page controls to the app features:
+   navigation, maintenance events, appliances, professionals,
+   the Maintenance Max chat, account settings, and authentication.
+*/
 
+/* =========================================================
+   Supabase connection
+   ========================================================= */
+
+// This browser key is intended for client-side use. Database access
+// is still controlled by the Supabase project's row-level security.
+const SUPABASE_URL = "https://bspemalirnvoomqtgwjd.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_Wvv2VOeFPJbrq92p5M0vAA_1uqt5E3J";
 
@@ -8,190 +21,852 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_PUBLISHABLE_KEY
 );
 
-// Loads all saved appliances from the Supabase database
-async function loadAppliances() {
-  // Request all appliance records from the appliances table.
-  // Sort them so the newest appliances appear first.
-  const {
-    data: savedAppliances,
-    error
-  } = await supabaseClient
-    .from("appliances")
-    .select("*")
-    .order("created_at", { ascending: false });
+/* =========================================================
+   App data
+   ========================================================= */
 
-  // If Supabase returns an error, display an error message
-  // and stop the function.
-if (error) {
-    console.error("Supabase error:", error);
-    showToast("Error", error.message);
-    return;
-}
+const pages = [
+  "home",
+  "maintenance",
+  "appliances",
+  "appliance-details",
+  "professionals",
+  "professional-profile",
+  "assistant"
+];
 
-  // Convert the database records into the format
-  // expected by the frontend appliance cards.
-  appliances = savedAppliances.map(appliance => ({
-    // Copy the appliance ID from the database.
-    id: appliance.appliance_id,
+const pageNames = {
+  home: "Overview",
+  maintenance: "Maintenance Log",
+  appliances: "My Appliances",
+  "appliance-details": "Appliance Details",
+  professionals: "Professionals",
+  "professional-profile": "Professional Profile",
+  assistant: "Maintenance Max"
+};
 
-    // Copy the appliance information from the database.
-    name: appliance.name,
-    type: appliance.type,
-    brand: appliance.brand || "Unknown brand",
-    model: appliance.model || "Model not added",
-    category: appliance.category,
-
-    // Format the last maintenance date.
-    // If no date exists, display a default message.
-    last: appliance.last_maintenance_date
-      ? formatDate(appliance.last_maintenance_date).full
-      : "Not yet serviced",
-
-    // These values are used by the current frontend design.
-    next: "Set a reminder",
-    status: "Up to date",
-    icon: "▤",
-    tone: "",
-
-    // Format the purchase date.
-    // If no purchase date exists, display a default message.
-    purchase: appliance.purchase_date
-      ? formatDate(appliance.purchase_date).full
-      : "Recently added"
-  }));
-
-  // Refresh the appliance cards so the saved database records
-  // are displayed on the page.
-  renderAppliances();
-}
-
-const pages = ['home','maintenance','appliances','appliance-details','professionals','professional-profile','assistant'];
-const pageNames = {home:'Overview',maintenance:'Maintenance Log',appliances:'My Appliances','appliance-details':'Appliance Details',professionals:'Professionals','professional-profile':'Professional Profile',assistant:'Maintenance Max'};
-let currentPage = 'home';
+let currentPage = "home";
 let selectedAppliance = null;
+
+// Keep the sample maintenance events used by the calendar and list.
 let events = [
-  {name:'Replace HVAC Filter', category:'HVAC', date:'2026-09-30', time:'9:00 AM', description:'Replace the filter to keep air quality fresh.', status:'Upcoming'},
-  {name:'Clean Dryer Vent', category:'Laundry', date:'2026-10-03', time:'10:30 AM', description:'Clear lint buildup and inspect the vent line.', status:'Upcoming'},
-  {name:'Refrigerator Filter', category:'Kitchen', date:'2026-10-14', time:'9:00 AM', description:'Replace the water and ice filter.', status:'Upcoming'},
-  {name:'Water Heater Inspection', category:'Plumbing', date:'2026-10-22', time:'2:00 PM', description:'Annual inspection and pressure relief check.', status:'Upcoming'},
-  {name:'Test Smoke Detectors', category:'General', date:'2026-09-12', time:'11:00 AM', description:'Test each detector and replace batteries as needed.', status:'Completed'}
+  {
+    name: "Replace HVAC Filter",
+    category: "HVAC",
+    date: "2026-09-30",
+    time: "9:00 AM",
+    description: "Replace the filter to keep air quality fresh.",
+    status: "Upcoming"
+  },
+  {
+    name: "Clean Dryer Vent",
+    category: "Laundry",
+    date: "2026-10-03",
+    time: "10:30 AM",
+    description: "Clear lint buildup and inspect the vent line.",
+    status: "Upcoming"
+  },
+  {
+    name: "Refrigerator Filter",
+    category: "Kitchen",
+    date: "2026-10-14",
+    time: "9:00 AM",
+    description: "Replace the water and ice filter.",
+    status: "Upcoming"
+  },
+  {
+    name: "Water Heater Inspection",
+    category: "Plumbing",
+    date: "2026-10-22",
+    time: "2:00 PM",
+    description: "Annual inspection and pressure relief check.",
+    status: "Upcoming"
+  },
+  {
+    name: "Test Smoke Detectors",
+    category: "General",
+    date: "2026-09-12",
+    time: "11:00 AM",
+    description: "Test each detector and replace batteries as needed.",
+    status: "Completed"
+  }
 ];
+
+// Appliance records are loaded from Supabase after sign-in.
+// Start in the loading state so the page does not briefly show
+// the first-time empty screen while the database request is pending.
 let appliances = [];
+let appliancesLoading = true;
+
+// Sample professional listings used by the Professionals page.
 const professionals = [
-  {name:'Evergreen Home Services', logo:'E', rating:'4.9', reviews:'128 reviews', distance:'1.8 mi', availability:'Today at 4:30 PM', description:'Friendly appliance repair from a trusted local team.', category:'Appliance specialist'},
-  {name:'FixRight Appliance Co.', logo:'F', rating:'4.8', reviews:'96 reviews', distance:'3.2 mi', availability:'Tomorrow at 9:00 AM', description:'Fast, honest repairs for all major appliance brands.', category:'Appliance repair'},
-  {name:'Boulder Handy Home', logo:'B', rating:'4.7', reviews:'74 reviews', distance:'4.5 mi', availability:'Fri, Oct 3', description:'Home maintenance and preventative care made easy.', category:'General home repair'}
+  {
+    name: "Evergreen Home Services",
+    logo: "E",
+    rating: "4.9",
+    reviews: "128 reviews",
+    distance: "1.8 mi",
+    availability: "Today at 4:30 PM",
+    description: "Friendly appliance repair from a trusted local team.",
+    category: "Appliance specialist"
+  },
+  {
+    name: "FixRight Appliance Co.",
+    logo: "F",
+    rating: "4.8",
+    reviews: "96 reviews",
+    distance: "3.2 mi",
+    availability: "Tomorrow at 9:00 AM",
+    description: "Fast, honest repairs for all major appliance brands.",
+    category: "Appliance repair"
+  },
+  {
+    name: "Boulder Handy Home",
+    logo: "B",
+    rating: "4.7",
+    reviews: "74 reviews",
+    distance: "4.5 mi",
+    availability: "Fri, Oct 3",
+    description: "Home maintenance and preventative care made easy.",
+    category: "General home repair"
+  }
 ];
 
-const $ = (selector, parent=document) => parent.querySelector(selector);
-const $$ = (selector, parent=document) => [...parent.querySelectorAll(selector)];
-const formatDate = (dateString) => { const d = new Date(`${dateString}T12:00:00`); return {month:d.toLocaleString('en-US',{month:'short'}).toUpperCase(), day:d.getDate(), full:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}; };
+/* =========================================================
+   Shared helpers
+   ========================================================= */
 
+// Find one element or a list of elements using a CSS selector.
+const $ = (selector, parent = document) =>
+  parent.querySelector(selector);
+
+const $$ = (selector, parent = document) =>
+  [...parent.querySelectorAll(selector)];
+
+// Keep date parsing at midday to avoid timezone shifts that can
+// move a displayed date to the previous or following day.
+function formatDate(dateString) {
+  const date = new Date(dateString + "T12:00:00");
+
+  return {
+    month: date
+      .toLocaleString("en-US", { month: "short" })
+      .toUpperCase(),
+    day: date.getDate(),
+    full: date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
+  };
+}
+
+// Show a short confirmation or error message in the toast area.
+function showToast(title, message) {
+  $("#toastTitle").textContent = title;
+  $("#toastMessage").textContent = message;
+  $("#toast").classList.add("show");
+
+  setTimeout(() => {
+    $("#toast").classList.remove("show");
+  }, 3200);
+}
+
+// Open or close one of the page's modal dialogs.
+function openModal(id) {
+  $("#" + id).classList.add("open");
+}
+
+function closeModal(id) {
+  $("#" + id).classList.remove("open");
+}
+
+// Use the matching CSS status color for appliance and event labels.
+function statusClass(status) {
+  if (status === "Up to date" || status === "Completed") {
+    return "green";
+  }
+
+  if (status === "Overdue") {
+    return "orange";
+  }
+
+  return "gray";
+}
+
+/* =========================================================
+   Page navigation
+   ========================================================= */
+
+// Switch the visible page and keep the URL hash in sync.
 function navigate(page, updateHistory = true) {
-  if (!pages.includes(page)) page = 'home';
+  if (!pages.includes(page)) {
+    page = "home";
+  }
 
-  if (updateHistory && location.hash !== `#${page}`) {
-    history.pushState(null, '', `#${page}`);
+  if (updateHistory && location.hash !== "#" + page) {
+    history.pushState(null, "", "#" + page);
   }
 
   currentPage = page;
-  pages.forEach(p => $(`#page-${p}`)?.classList.toggle('active-page', p === page));
-  $$('.nav-item').forEach(item =>
-    item.classList.toggle(
-      'active',
-      item.dataset.page === page ||
-      (page === 'appliance-details' && item.dataset.page === 'appliances') ||
-      (page === 'professional-profile' && item.dataset.page === 'professionals')
-    )
-  );
-  $('#breadcrumbs').innerHTML =
-    `<span>Home</span><span class="crumb-separator">/</span><strong>${pageNames[page]}</strong>`;
-  $('#sidebar').classList.remove('open');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  if (page === 'maintenance') {
+  pages.forEach(pageName => {
+    const pageElement = $("#page-" + pageName);
+
+    if (pageElement) {
+      pageElement.classList.toggle(
+        "active-page",
+        pageName === page
+      );
+    }
+  });
+
+  // Keep parent navigation items highlighted for detail pages.
+  $$(".nav-item").forEach(item => {
+    const isCurrentPage = item.dataset.page === page;
+    const isApplianceDetail =
+      page === "appliance-details" &&
+      item.dataset.page === "appliances";
+    const isProfessionalDetail =
+      page === "professional-profile" &&
+      item.dataset.page === "professionals";
+
+    item.classList.toggle(
+      "active",
+      isCurrentPage || isApplianceDetail || isProfessionalDetail
+    );
+  });
+
+  $("#breadcrumbs").innerHTML =
+    "<span>Home</span>" +
+    '<span class="crumb-separator">/</span>' +
+    "<strong>" + pageNames[page] + "</strong>";
+
+  $("#sidebar").classList.remove("open");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // Refresh the page-specific content whenever a page is opened.
+  if (page === "maintenance") {
     renderCalendar();
     renderEvents();
   }
-  if (page === 'appliances') renderAppliances();
-  if (page === 'professionals') renderProfessionals();
-}
 
-function showToast(title, message){ $('#toastTitle').textContent=title; $('#toastMessage').textContent=message; $('#toast').classList.add('show'); setTimeout(()=>$('#toast').classList.remove('show'),3200); }
-function openModal(id){ $(`#${id}`).classList.add('open'); }
-function closeModal(id){ $(`#${id}`).classList.remove('open'); }
-function statusClass(status){ return status === 'Up to date' || status === 'Completed' ? 'green' : status === 'Overdue' ? 'orange' : 'gray'; }
-
-function renderMiniEvents(){
-  $('#miniEventList').innerHTML = events.filter(e=>e.status !== 'Completed').slice(0,3).map(e=>{const d=formatDate(e.date);return `<div class="mini-event"><div class="event-date"><span>${d.month}</span><b>${d.day}</b></div><div class="mini-event-info"><strong>${e.name}</strong><span>${e.time} · ${e.category}</span></div><span class="event-category">Upcoming</span></div>`}).join('');
-}
-function renderCalendar(){
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const first = new Date(2026,8,1).getDay();
-  const daysInMonth = 30;
-  const cells = days.map(d=>`<div class="calendar-day-name">${d}</div>`);
-  for(let i=0;i<first;i++) cells.push('<div class="calendar-cell muted-day"></div>');
-  for(let day=1;day<=daysInMonth;day++){
-    const iso=`2026-09-${String(day).padStart(2,'0')}`;
-    const dayEvents=events.filter(e=>e.date===iso);
-    cells.push(`<div class="calendar-cell ${day===30?'today':''}"><span class="day-number">${day}</span>${dayEvents.map((e,i)=>`<span class="calendar-event ${i%3===1?'peach-event':i%3===2?'purple-event':''}" title="${e.description}">${e.name}</span>`).join('')}</div>`);
+  if (page === "appliances") {
+    renderAppliances();
   }
-  while(cells.length<49) cells.push('<div class="calendar-cell muted-day"></div>');
-  $('#calendarGrid').innerHTML=cells.join('');
+
+  if (page === "professionals") {
+    renderProfessionals();
+  }
+}
+
+/* =========================================================
+   Maintenance events
+   ========================================================= */
+
+// Draw the small upcoming-events list on the home page.
+function renderMiniEvents() {
+  const upcomingEvents = events
+    .filter(event => event.status !== "Completed")
+    .slice(0, 3);
+
+  $("#miniEventList").innerHTML = upcomingEvents
+    .map(event => {
+      const date = formatDate(event.date);
+
+      return (
+        '<div class="mini-event">' +
+          '<div class="event-date">' +
+            "<span>" + date.month + "</span>" +
+            "<b>" + date.day + "</b>" +
+          "</div>" +
+          '<div class="mini-event-info">' +
+            "<strong>" + event.name + "</strong>" +
+            "<span>" + event.time + " · " + event.category + "</span>" +
+          "</div>" +
+          '<span class="event-category">Upcoming</span>' +
+        "</div>"
+      );
+    })
+    .join("");
+}
+
+// Draw the September 2026 calendar and place events on their dates.
+function renderCalendar() {
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const firstDayOfMonth = new Date(2026, 8, 1).getDay();
+  const daysInMonth = 30;
+
+  const cells = daysOfWeek.map(day =>
+    '<div class="calendar-day-name">' + day + "</div>"
+  );
+
+  // Add blank cells before the first day of the month.
+  for (let index = 0; index < firstDayOfMonth; index += 1) {
+    cells.push('<div class="calendar-cell muted-day"></div>');
+  }
+
+  // Add one calendar cell for each day, including that day's events.
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const isoDate = "2026-09-" + String(day).padStart(2, "0");
+    const dayEvents = events.filter(event => event.date === isoDate);
+    const isToday = day === 30;
+
+    const eventMarkup = dayEvents
+      .map((event, index) => {
+        let eventColor = "";
+
+        if (index % 3 === 1) {
+          eventColor = " peach-event";
+        } else if (index % 3 === 2) {
+          eventColor = " purple-event";
+        }
+
+        return (
+          '<span class="calendar-event' + eventColor + '"' +
+            ' title="' + event.description + '">' +
+            event.name +
+          "</span>"
+        );
+      })
+      .join("");
+
+    cells.push(
+      '<div class="calendar-cell' + (isToday ? " today" : "") + '">' +
+        '<span class="day-number">' + day + "</span>" +
+        eventMarkup +
+      "</div>"
+    );
+  }
+
+  // Complete the final calendar row with blank cells.
+  while (cells.length < 49) {
+    cells.push('<div class="calendar-cell muted-day"></div>');
+  }
+
+  $("#calendarGrid").innerHTML = cells.join("");
   renderMiniEvents();
 }
-function renderEvents(){
-  const sorted=[...events].sort((a,b)=>a.date.localeCompare(b.date));
-  $('#eventList').innerHTML=sorted.map((e,index)=>{const d=formatDate(e.date);return `<div class="event-card"><div class="event-card-date"><span>${d.month}</span><b>${d.day}</b></div><div class="event-card-body"><strong>${e.name}</strong><small>${e.category} · ${e.time}</small><p class="event-description">${e.description}</p></div><span class="status-pill ${statusClass(e.status)}">${e.status}</span>${e.status!=='Completed'?`<button class="event-complete" data-complete="${events.indexOf(e)}" title="Mark completed">✓</button>`:'<span class="event-complete">✓</span>'}</div>`}).join('');
-  $$('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>{events[Number(btn.dataset.complete)].status='Completed'; renderEvents(); renderCalendar(); showToast('Task completed','Nice work keeping your home on track.');}));
-}
-function iconFor(a){return `<div class="appliance-icon ${a.tone}">${a.icon}</div>`}
-function renderAppliances(){
-  const query=($('#applianceSearch').value||'').toLowerCase(); const category=$('#categoryFilter').value;
-  const filtered=appliances.filter(a=>(category==='all'||a.category===category)&&[a.name,a.type,a.brand,a.category].join(' ').toLowerCase().includes(query));
-  $('#applianceCount').textContent=`${filtered.length} appliance${filtered.length===1?'':'s'}`;
-  $('#applianceGrid').innerHTML=filtered.length ? filtered.map(a=>`<article class="appliance-card" data-appliance-card="${a.name}"><div class="appliance-card-top">${iconFor(a)}<span class="status-pill ${statusClass(a.status)}">${a.status}</span></div><h3>${a.name}</h3><span class="category">${a.brand} · ${a.category}</span><div class="appliance-dates"><div><span>Last maintenance</span><strong>${a.last}</strong></div><div><span>Next recommended</span><strong>${a.next}</strong></div><span class="appliance-arrow">→</span></div></article>`).join('') : '<div class="empty-state">No appliances match your search.</div>';
-  $$('[data-appliance-card]').forEach(card=>card.addEventListener('click',()=>openAppliance(card.dataset.applianceCard)));
-}
-function openAppliance(name){ selectedAppliance=appliances.find(a=>a.name===name)||appliances[0]; $('#detailName').textContent=selectedAppliance.name; $('#detailMeta').textContent=`${selectedAppliance.brand} · ${selectedAppliance.model} · Purchased ${selectedAppliance.purchase}`; $('#detailIcon').className=`appliance-large-icon ${selectedAppliance.tone}`; $('#detailIcon').textContent=selectedAppliance.icon; $('#detailLast').textContent=selectedAppliance.last; $('#detailNext').textContent=selectedAppliance.next; $('#detailStatus').textContent=selectedAppliance.status; $('#detailStatus').className=`status-pill ${statusClass(selectedAppliance.status)}`; navigate('appliance-details'); }
-function renderProfessionals(){
-  $('#professionalList').innerHTML=professionals.map((p,i)=>`<article class="pro-card ${i===0?'selected':''}"><div class="pro-top"><div class="pro-logo">${p.logo}</div><div><h3>${p.name}</h3><div class="pro-rating">★ ${p.rating}<span>${p.reviews}</span></div></div></div><p class="pro-description">${p.description}</p><div class="pro-meta"><span>${p.category}</span><span>${p.distance}</span><span>${p.availability}</span></div><div class="pro-actions"><button class="outline-button" data-profile="${p.name}">View profile</button><button class="soft-button" data-book="${p.name}">Select time</button></div></article>`).join('');
-  $$('[data-profile]').forEach(btn=>btn.addEventListener('click',()=>navigate('professional-profile')));
-  $$('[data-book]').forEach(btn=>btn.addEventListener('click',()=>{navigate('professional-profile');setTimeout(()=>showToast('Professional selected','Choose an available appointment time.'),250);}));
-}
-function addChatMessage(text, type){
-  let list=$('#chatMessageList'); if(!list){ $('#chatWelcome').remove(); list=document.createElement('div'); list.id='chatMessageList'; list.className='chat-message-list'; $('#chatWindow').appendChild(list); }
-  const row=document.createElement('div'); row.className=`chat-message ${type}`; row.innerHTML=type==='max'?`<span class="max-avatar">✦</span><div class="chat-bubble">${text}</div>`:`<div class="chat-bubble">${text}</div>`; list.appendChild(row); $('#chatWindow').scrollTop=$('#chatWindow').scrollHeight;
-}
-function askMax(text){
-  addChatMessage(text,'user'); setTimeout(()=>{let response='I can help with that. Tell me a little more about what you’re noticing, and I’ll walk through safe next steps.'; if(text.toLowerCase().includes('refrigerator')) response='For a buzzing refrigerator, first check that it is level and has a little space from the wall. The sound may come from the condenser fan, evaporator fan, or ice maker. If it is unusually loud, paired with warming food, or involves exposed wiring, unplug the appliance and contact a licensed technician.'; if(text.toLowerCase().includes('appliance')) response=`I can help with your ${selectedAppliance?.name||'appliances'}. What would you like to know about its maintenance or symptoms?`; if(text.toLowerCase().includes('professional')) response='I found trusted local professionals who can help. Open the Professionals page to compare availability, ratings, and services.'; addChatMessage(response,'max');},450);
+
+// Draw the maintenance list in date order and connect completion buttons.
+function renderEvents() {
+  const sortedEvents = [...events].sort((first, second) =>
+    first.date.localeCompare(second.date)
+  );
+
+  $("#eventList").innerHTML = sortedEvents
+    .map(event => {
+      const date = formatDate(event.date);
+      const eventIndex = events.indexOf(event);
+      const completionControl =
+        event.status !== "Completed"
+          ? '<button class="event-complete" data-complete="' +
+            eventIndex +
+            '" title="Mark completed">✓</button>'
+          : '<span class="event-complete">✓</span>';
+
+      return (
+        '<div class="event-card">' +
+          '<div class="event-card-date">' +
+            "<span>" + date.month + "</span>" +
+            "<b>" + date.day + "</b>" +
+          "</div>" +
+          '<div class="event-card-body">' +
+            "<strong>" + event.name + "</strong>" +
+            "<small>" + event.category + " · " + event.time + "</small>" +
+            '<p class="event-description">' + event.description + "</p>" +
+          "</div>" +
+          '<span class="status-pill ' + statusClass(event.status) + '">' +
+            event.status +
+          "</span>" +
+          completionControl +
+        "</div>"
+      );
+    })
+    .join("");
+
+  $$("[data-complete]").forEach(button => {
+    button.addEventListener("click", () => {
+      const eventIndex = Number(button.dataset.complete);
+
+      events[eventIndex].status = "Completed";
+
+      renderEvents();
+      renderCalendar();
+
+      showToast(
+        "Task completed",
+        "Nice work keeping your home on track."
+      );
+    });
+  });
 }
 
-document.addEventListener('click', e=>{ const pageTarget=e.target.closest('[data-page]'); if(pageTarget){e.preventDefault();navigate(pageTarget.dataset.page);} const close=e.target.closest('[data-close]'); if(close)closeModal(close.dataset.close); if(e.target.classList.contains('modal-backdrop'))e.target.classList.remove('open'); });
+/* =========================================================
+   Appliance loading and display
+   ========================================================= */
 
-window.addEventListener('popstate', () => {
-  navigate(location.hash.slice(1) || 'home', false);
+// Load the signed-in user's appliance records from Supabase.
+async function loadAppliances() {
+  appliancesLoading = true;
+  renderAppliances();
+
+  try {
+    const {
+      data: savedAppliances,
+      error
+    } = await supabaseClient
+      .from("appliances")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Convert database fields to the format used by the appliance cards.
+    appliances = (savedAppliances || []).map(appliance => ({
+      id: appliance.appliance_id,
+      name: appliance.name,
+      type: appliance.type,
+      brand: appliance.brand || "Unknown brand",
+      model: appliance.model || "Model not added",
+      category: appliance.category,
+
+      last: appliance.last_maintenance_date
+        ? formatDate(appliance.last_maintenance_date).full
+        : "Not yet serviced",
+
+      // These are placeholder values used by the current page design.
+      next: "Set a reminder",
+      status: "Up to date",
+      icon: "▤",
+      tone: "",
+
+      purchase: appliance.purchase_date
+        ? formatDate(appliance.purchase_date).full
+        : "Recently added"
+    }));
+  } catch (error) {
+    console.error("Supabase appliance error:", error);
+
+    showToast(
+      "Error",
+      error.message || "Unable to load your appliances."
+    );
+  } finally {
+    appliancesLoading = false;
+    renderAppliances();
+  }
+}
+
+// Create the standard appliance icon used on each card.
+function iconFor(appliance) {
+  return (
+    '<div class="appliance-icon ' + appliance.tone + '">' +
+      appliance.icon +
+    "</div>"
+  );
+}
+
+// Draw appliance cards, the loading state, or the first-appliance message.
+function renderAppliances() {
+  const searchQuery = ($("#applianceSearch").value || "").toLowerCase();
+  const category = $("#categoryFilter").value;
+
+  if (appliancesLoading) {
+    $("#applianceCount").textContent = "Loading...";
+
+    $("#applianceGrid").innerHTML =
+      '<div class="appliance-empty-state" role="status">' +
+        '<div class="appliance-empty-icon loading-spinner"></div>' +
+        "<h2>Getting your home ready...</h2>" +
+        "<p>Gathering your saved appliances. This will just take a moment.</p>" +
+      "</div>";
+
+    return;
+  }
+
+  const filteredAppliances = appliances.filter(appliance => {
+    const matchesCategory =
+      category === "all" || appliance.category === category;
+    const searchableValues = [
+      appliance.name,
+      appliance.type,
+      appliance.brand,
+      appliance.category
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return matchesCategory && searchableValues.includes(searchQuery);
+  });
+
+  $("#applianceCount").textContent =
+    filteredAppliances.length +
+    " appliance" +
+    (filteredAppliances.length === 1 ? "" : "s");
+
+  // Give a first-time visitor a clear path to add their first appliance.
+  const hasNoAppliances =
+    appliances.length === 0 &&
+    searchQuery === "" &&
+    category === "all";
+
+  if (hasNoAppliances) {
+    $("#applianceGrid").innerHTML =
+      '<div class="appliance-empty-state">' +
+        '<div class="appliance-empty-icon" aria-hidden="true">⌂</div>' +
+        '<span class="eyebrow">A LITTLE MORE PEACE OF MIND</span>' +
+        "<h2>Your home’s appliance list starts here</h2>" +
+        "<p>" +
+          "Add your first appliance to keep its details and care history " +
+          "together in one handy place." +
+        "</p>" +
+        '<button class="button button-primary" id="emptyStateAddAppliance">' +
+          "<span>＋</span> Add your first appliance" +
+        "</button>" +
+      "</div>";
+
+    $("#emptyStateAddAppliance").addEventListener("click", () => {
+      openModal("applianceModal");
+    });
+
+    return;
+  }
+
+  if (filteredAppliances.length === 0) {
+    $("#applianceGrid").innerHTML =
+      '<div class="empty-state">No appliances match your search.</div>';
+
+    return;
+  }
+
+  $("#applianceGrid").innerHTML = filteredAppliances
+    .map(appliance => {
+      return (
+        '<article class="appliance-card" data-appliance-card="' +
+          appliance.name +
+        '">' +
+          '<div class="appliance-card-top">' +
+            iconFor(appliance) +
+            '<span class="status-pill ' +
+              statusClass(appliance.status) +
+            '">' +
+              appliance.status +
+            "</span>" +
+          "</div>" +
+          "<h3>" + appliance.name + "</h3>" +
+          '<span class="category">' +
+            appliance.brand + " · " + appliance.category +
+          "</span>" +
+          '<div class="appliance-dates">' +
+            "<div>" +
+              "<span>Last maintenance</span>" +
+              "<strong>" + appliance.last + "</strong>" +
+            "</div>" +
+            "<div>" +
+              "<span>Next recommended</span>" +
+              "<strong>" + appliance.next + "</strong>" +
+            "</div>" +
+            '<span class="appliance-arrow">→</span>' +
+          "</div>" +
+        "</article>"
+      );
+    })
+    .join("");
+
+  // Open the appliance detail page when a card is selected.
+  $$("[data-appliance-card]").forEach(card => {
+    card.addEventListener("click", () => {
+      openAppliance(card.dataset.applianceCard);
+    });
+  });
+}
+
+// Fill the appliance detail page and navigate to it.
+function openAppliance(name) {
+  selectedAppliance =
+    appliances.find(appliance => appliance.name === name) ||
+    appliances[0];
+
+  if (!selectedAppliance) {
+    return;
+  }
+
+  $("#detailName").textContent = selectedAppliance.name;
+  $("#detailMeta").textContent =
+    selectedAppliance.brand +
+    " · " +
+    selectedAppliance.model +
+    " · Purchased " +
+    selectedAppliance.purchase;
+
+  $("#detailIcon").className =
+    "appliance-large-icon " + selectedAppliance.tone;
+  $("#detailIcon").textContent = selectedAppliance.icon;
+
+  $("#detailLast").textContent = selectedAppliance.last;
+  $("#detailNext").textContent = selectedAppliance.next;
+  $("#detailStatus").textContent = selectedAppliance.status;
+  $("#detailStatus").className =
+    "status-pill " + statusClass(selectedAppliance.status);
+
+  navigate("appliance-details");
+}
+
+/* =========================================================
+   Professionals
+   ========================================================= */
+
+// Draw the professional cards and attach profile and booking actions.
+function renderProfessionals() {
+  $("#professionalList").innerHTML = professionals
+    .map((professional, index) => {
+      const selectedClass = index === 0 ? " selected" : "";
+
+      return (
+        '<article class="pro-card' + selectedClass + '">' +
+          '<div class="pro-top">' +
+            '<div class="pro-logo">' + professional.logo + "</div>" +
+            "<div>" +
+              "<h3>" + professional.name + "</h3>" +
+              '<div class="pro-rating">★ ' +
+                professional.rating +
+                "<span>" + professional.reviews + "</span>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+          '<p class="pro-description">' +
+            professional.description +
+          "</p>" +
+          '<div class="pro-meta">' +
+            "<span>" + professional.category + "</span>" +
+            "<span>" + professional.distance + "</span>" +
+            "<span>" + professional.availability + "</span>" +
+          "</div>" +
+          '<div class="pro-actions">' +
+            '<button class="outline-button" data-profile="' +
+              professional.name +
+            '">View profile</button>' +
+            '<button class="soft-button" data-book="' +
+              professional.name +
+            '">Select time</button>' +
+          "</div>" +
+        "</article>"
+      );
+    })
+    .join("");
+
+  $$("[data-profile]").forEach(button => {
+    button.addEventListener("click", () => {
+      navigate("professional-profile");
+    });
+  });
+
+  $$("[data-book]").forEach(button => {
+    button.addEventListener("click", () => {
+      navigate("professional-profile");
+
+      setTimeout(() => {
+        showToast(
+          "Professional selected",
+          "Choose an available appointment time."
+        );
+      }, 250);
+    });
+  });
+}
+
+/* =========================================================
+   Maintenance Max chat
+   ========================================================= */
+
+// Add a user or assistant message to the chat window.
+function addChatMessage(text, type) {
+  let messageList = $("#chatMessageList");
+
+  if (!messageList) {
+    $("#chatWelcome").remove();
+
+    messageList = document.createElement("div");
+    messageList.id = "chatMessageList";
+    messageList.className = "chat-message-list";
+    $("#chatWindow").appendChild(messageList);
+  }
+
+  const row = document.createElement("div");
+  row.className = "chat-message " + type;
+
+  if (type === "max") {
+    row.innerHTML =
+      '<span class="max-avatar">✦</span>' +
+      '<div class="chat-bubble">' + text + "</div>";
+  } else {
+    row.innerHTML = '<div class="chat-bubble">' + text + "</div>";
+  }
+
+  messageList.appendChild(row);
+  $("#chatWindow").scrollTop = $("#chatWindow").scrollHeight;
+}
+
+// Respond to the user's prompt with the app's current sample guidance.
+function askMax(text) {
+  addChatMessage(text, "user");
+
+  setTimeout(() => {
+    let response =
+      "I can help with that. Tell me a little more about what you’re " +
+      "noticing, and I’ll walk through safe next steps.";
+
+    const lowerCaseText = text.toLowerCase();
+
+    if (lowerCaseText.includes("refrigerator")) {
+      response =
+        "For a buzzing refrigerator, first check that it is level and " +
+        "has a little space from the wall. The sound may come from the " +
+        "condenser fan, evaporator fan, or ice maker. If it is unusually " +
+        "loud, paired with warming food, or involves exposed wiring, " +
+        "unplug the appliance and contact a licensed technician.";
+    }
+
+    if (lowerCaseText.includes("appliance")) {
+      const applianceName = selectedAppliance
+        ? selectedAppliance.name
+        : "appliances";
+
+      response =
+        "I can help with your " +
+        applianceName +
+        ". What would you like to know about its maintenance or symptoms?";
+    }
+
+    if (lowerCaseText.includes("professional")) {
+      response =
+        "I found trusted local professionals who can help. Open the " +
+        "Professionals page to compare availability, ratings, and services.";
+    }
+
+    addChatMessage(response, "max");
+  }, 450);
+}
+
+/* =========================================================
+   Shared click and browser-history events
+   ========================================================= */
+
+// Handle page links, modal close buttons, and backdrop clicks in one place.
+document.addEventListener("click", event => {
+  const pageTarget = event.target.closest("[data-page]");
+
+  if (pageTarget) {
+    event.preventDefault();
+    navigate(pageTarget.dataset.page);
+  }
+
+  const closeButton = event.target.closest("[data-close]");
+
+  if (closeButton) {
+    closeModal(closeButton.dataset.close);
+  }
+
+  if (event.target.classList.contains("modal-backdrop")) {
+    event.target.classList.remove("open");
+  }
 });
 
-$('#menuButton').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));
-$('#openEventModal').addEventListener('click',()=>openModal('eventModal')); $('#floatingAdd').addEventListener('click',()=>openModal('eventModal'));
-$('#openApplianceModal').addEventListener('click',()=>openModal('applianceModal'));
-$$('.segment').forEach(btn=>btn.addEventListener('click',()=>{$$('.segment').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$('#calendarView').classList.toggle('hidden',btn.dataset.view!=='calendar');$('#listView').classList.toggle('hidden',btn.dataset.view!=='list');}));
-$('#eventForm').addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.target);events.push({name:data.get('name'),category:data.get('category'),date:data.get('date'),time:new Date(`2026-01-01T${data.get('time')||'09:00'}`).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),description:data.get('description')||'A new home maintenance reminder.',status:'Upcoming'});e.target.reset();closeModal('eventModal');renderCalendar();renderEvents();showToast('Event added','Your maintenance reminder is on the calendar.');});
+// Keep the visible page in sync when the browser Back or Forward button is used.
+window.addEventListener("popstate", () => {
+  navigate(location.hash.slice(1) || "home", false);
+});
 
-// Runs when the user submits the Add Appliance form
-$("#applianceForm").addEventListener("submit", async event => {
-  // Prevents the browser from refreshing the page automatically
+/* =========================================================
+   Main page controls
+   ========================================================= */
+
+// Mobile sidebar and modal buttons.
+$("#menuButton").addEventListener("click", () => {
+  $("#sidebar").classList.toggle("open");
+});
+
+$("#openEventModal").addEventListener("click", () => {
+  openModal("eventModal");
+});
+
+$("#floatingAdd").addEventListener("click", () => {
+  openModal("eventModal");
+});
+
+$("#openApplianceModal").addEventListener("click", () => {
+  openModal("applianceModal");
+});
+
+// Switch between the calendar and list views on the Maintenance page.
+$$(".segment").forEach(button => {
+  button.addEventListener("click", () => {
+    $$(".segment").forEach(segment => {
+      segment.classList.remove("active");
+    });
+
+    button.classList.add("active");
+
+    $("#calendarView").classList.toggle(
+      "hidden",
+      button.dataset.view !== "calendar"
+    );
+
+    $("#listView").classList.toggle(
+      "hidden",
+      button.dataset.view !== "list"
+    );
+  });
+});
+
+// Save a new maintenance event in the current browser session.
+$("#eventForm").addEventListener("submit", event => {
   event.preventDefault();
 
-  // Collects all of the values entered into the form
+  const formData = new FormData(event.target);
+  const timeValue = formData.get("time") || "09:00";
+  const displayTime = new Date("2026-01-01T" + timeValue)
+    .toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+
+  events.push({
+    name: formData.get("name"),
+    category: formData.get("category"),
+    date: formData.get("date"),
+    time: displayTime,
+    description:
+      formData.get("description") ||
+      "A new home maintenance reminder.",
+    status: "Upcoming"
+  });
+
+  event.target.reset();
+  closeModal("eventModal");
+  renderCalendar();
+  renderEvents();
+
+  showToast(
+    "Event added",
+    "Your maintenance reminder is on the calendar."
+  );
+});
+
+/* =========================================================
+   Appliance form
+   ========================================================= */
+
+// Save a new appliance to Supabase, then display the returned record.
+$("#applianceForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
   const formData = new FormData(event.target);
 
-
-
-  // Creates an object using the form values.
-  // The property names must match the column names
-  // in the Supabase appliances table.
+  // These keys must match the column names in the Supabase table.
   const applianceToInsert = {
     name: formData.get("name"),
     type: formData.get("type"),
@@ -202,10 +877,6 @@ $("#applianceForm").addEventListener("submit", async event => {
     last_maintenance_date: formData.get("last") || null
   };
 
-  // Sends the new appliance to Supabase.
-  // insert() adds the row to the database.
-  // select() asks Supabase to return the inserted row.
-  // single() converts the returned array into one object.
   const {
     data: savedAppliance,
     error
@@ -215,9 +886,8 @@ $("#applianceForm").addEventListener("submit", async event => {
     .select()
     .single();
 
-  // Displays an error if the database request failed
   if (error) {
-    console.error(error);
+    console.error("Appliance save error:", error);
 
     showToast(
       "Error",
@@ -227,8 +897,7 @@ $("#applianceForm").addEventListener("submit", async event => {
     return;
   }
 
-  // Converts the database record into the format
-  // expected by the existing appliance cards.
+  // Match the database record to the format used by appliance cards.
   const applianceForUI = {
     id: savedAppliance.appliance_id,
     name: savedAppliance.name,
@@ -251,61 +920,158 @@ $("#applianceForm").addEventListener("submit", async event => {
       : "Recently added"
   };
 
-  // Adds the saved appliance to the frontend array.
-  // unshift() places it at the beginning of the list.
+  // Add the new record to the beginning of the visible appliance list.
   appliances.unshift(applianceForUI);
 
-  // Redraws the appliance cards so the new appliance appears
-  // immediately without requiring another page refresh.
   renderAppliances();
-
-  // Clears the form fields
   event.target.reset();
-
-  // Closes the Add Appliance modal
   closeModal("applianceModal");
 
-  // Shows a success message to the user
   showToast(
     "Appliance added",
     "Your appliance was saved successfully."
   );
 });
-$('#applianceSearch').addEventListener('input',renderAppliances); $('#categoryFilter').addEventListener('change',renderAppliances);
-$('#askMaxButton').addEventListener('click',()=>{navigate('assistant');setTimeout(()=>{if(selectedAppliance) askMax(`I have a question about my ${selectedAppliance.name}.`);},100);});
-$$('[data-prompt]').forEach(btn=>btn.addEventListener('click',()=>{const p=btn.dataset.prompt;if(p==='Ask About an Appliance'){addChatMessage('Which appliance would you like to ask about?','max');}else{askMax(p);}}));
-$$('[data-appliance]').forEach(btn=>btn.addEventListener('click',()=>askMax(`I have a question about my ${btn.dataset.appliance}.`)));
-$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const input=$('#chatInput');if(input.value.trim()){askMax(input.value.trim());input.value='';}});
-$$('.category-chip').forEach(btn=>btn.addEventListener('click',()=>{$$('.category-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}));
-$('#findProfessionals').addEventListener('click',()=>{renderProfessionals();showToast('Search updated','Showing trusted professionals near you.');});
-$('#bookService').addEventListener('click',()=>{navigate('professional-profile');showToast('Ready to book','Choose a date and time below.');});
-$$('.date-option').forEach(btn=>btn.addEventListener('click',()=>{$$('.date-option').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}));
-$$('.time-options button').forEach(btn=>btn.addEventListener('click',()=>{$$('.time-options button').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');}));
-$('#selectTime').addEventListener('click',()=>showToast('Appointment selected','Evergreen Home Services will confirm shortly.'));
-$$('#starInput button').forEach((btn,i)=>btn.addEventListener('click',()=>$$('#starInput button').forEach((b,j)=>b.classList.toggle('selected',j<=i))));
-$('#submitReview').addEventListener('click',()=>showToast('Review submitted','Thanks for sharing your experience.'));
 
-navigate(location.hash.slice(1) || 'home', false);
+// Update the appliance list as the user searches or changes category.
+$("#applianceSearch").addEventListener("input", renderAppliances);
+$("#categoryFilter").addEventListener("change", renderAppliances);
+
+/* =========================================================
+   Assistant and professional page controls
+   ========================================================= */
+
+// Open Maintenance Max from an appliance detail page.
+$("#askMaxButton").addEventListener("click", () => {
+  navigate("assistant");
+
+  setTimeout(() => {
+    if (selectedAppliance) {
+      askMax("I have a question about my " + selectedAppliance.name + ".");
+    }
+  }, 100);
+});
+
+// Handle the suggested Maintenance Max prompts.
+$$("[data-prompt]").forEach(button => {
+  button.addEventListener("click", () => {
+    const prompt = button.dataset.prompt;
+
+    if (prompt === "Ask About an Appliance") {
+      addChatMessage(
+        "Which appliance would you like to ask about?",
+        "max"
+      );
+    } else {
+      askMax(prompt);
+    }
+  });
+});
+
+// Ask Max about the appliance selected in the context panel.
+$$("[data-appliance]").forEach(button => {
+  button.addEventListener("click", () => {
+    askMax("I have a question about my " + button.dataset.appliance + ".");
+  });
+});
+
+// Send a message typed into the chat input.
+$("#chatForm").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const input = $("#chatInput");
+  const message = input.value.trim();
+
+  if (message) {
+    askMax(message);
+    input.value = "";
+  }
+});
+
+// Select a professional category.
+$$(".category-chip").forEach(button => {
+  button.addEventListener("click", () => {
+    $$(".category-chip").forEach(chip => {
+      chip.classList.remove("active");
+    });
+
+    button.classList.add("active");
+  });
+});
+
+$("#findProfessionals").addEventListener("click", () => {
+  renderProfessionals();
+  showToast("Search updated", "Showing trusted professionals near you.");
+});
+
+$("#bookService").addEventListener("click", () => {
+  navigate("professional-profile");
+  showToast("Ready to book", "Choose a date and time below.");
+});
+
+// Select an available appointment date and time.
+$$(".date-option").forEach(button => {
+  button.addEventListener("click", () => {
+    $$(".date-option").forEach(option => {
+      option.classList.remove("active");
+    });
+
+    button.classList.add("active");
+  });
+});
+
+$$(".time-options button").forEach(button => {
+  button.addEventListener("click", () => {
+    $$(".time-options button").forEach(option => {
+      option.classList.remove("selected");
+    });
+
+    button.classList.add("selected");
+  });
+});
+
+$("#selectTime").addEventListener("click", () => {
+  showToast(
+    "Appointment selected",
+    "Evergreen Home Services will confirm shortly."
+  );
+});
+
+// Update the selected star rating.
+$("#starInput button").forEach((button, selectedIndex) => {
+  button.addEventListener("click", () => {
+    $$("#starInput button").forEach((star, starIndex) => {
+      star.classList.toggle("selected", starIndex <= selectedIndex);
+    });
+  });
+});
+
+$("#submitReview").addEventListener("click", () => {
+  showToast("Review submitted", "Thanks for sharing your experience.");
+});
+
+/* =========================================================
+   Initial page rendering
+   ========================================================= */
+
+// Restore the page represented by the current URL hash.
+navigate(location.hash.slice(1) || "home", false);
+
+// Draw the sample data shown before a page is opened.
 renderCalendar();
 renderEvents();
 renderMiniEvents();
 renderProfessionals();
 
-// ====================================
-// ACCOUNT SETTINGS - SUPABASE
-// ====================================
+/* =========================================================
+   Account settings
+   ========================================================= */
 
-// The currently signed-in user's account information
+// Store the authenticated Supabase user for account changes.
 let currentAccountUser = null;
 
-
-// ====================================
-// LOAD ACCOUNT INFORMATION
-// ====================================
-
+// Retrieve the current user and refresh their name in the interface.
 async function loadAccount() {
-
-  // Get the currently authenticated user
   const { data, error } = await supabaseClient.auth.getUser();
 
   if (error || !data.user) {
@@ -314,41 +1080,29 @@ async function loadAccount() {
   }
 
   currentAccountUser = data.user;
-
   updateAccountDisplay();
 }
 
-
-// ====================================
-// UPDATE NAME THROUGHOUT THE APP
-// ====================================
-
+// Update the name and profile initials throughout the app.
 function updateAccountDisplay() {
+  if (!currentAccountUser) {
+    return;
+  }
 
-  if (!currentAccountUser) return;
-
-  // Retrieve the first name from Supabase metadata
   const firstName =
     currentAccountUser.user_metadata?.first_name || "";
-
-  // Use a friendly placeholder if no name exists
   const displayName = firstName || "Your Name";
   const greetingName = firstName || "there";
 
-  // Sidebar
   $("#sidebarUsername").textContent = displayName;
-
-  // Homepage greeting
   $("#homeUsername").textContent = greetingName;
 
-  // Maintenance Max greeting
   const maxUsername = $("#maxUsername");
 
   if (maxUsername) {
     maxUsername.textContent = greetingName;
   }
 
-  // Profile initials
   const initial = firstName
     ? firstName.charAt(0).toUpperCase()
     : "?";
@@ -357,14 +1111,8 @@ function updateAccountDisplay() {
   $(".top-avatar").textContent = initial;
 }
 
-
-// ====================================
-// OPEN ACCOUNT SETTINGS
-// ====================================
-
+// Load saved account information into the settings form.
 $("#accountSettingsButton").addEventListener("click", async () => {
-
-  // Refresh account information from Supabase
   await loadAccount();
 
   if (!currentAccountUser) {
@@ -372,30 +1120,23 @@ $("#accountSettingsButton").addEventListener("click", async () => {
     return;
   }
 
-  // Fill form with current account information
   $("#accountFirstName").value =
     currentAccountUser.user_metadata?.first_name || "";
 
-  $("#accountEmail").value =
-    currentAccountUser.email || "";
+  $("#accountEmail").value = currentAccountUser.email || "";
 
   $("#accountZip").value =
     currentAccountUser.user_metadata?.zip_code || "";
 
-  // Never display an existing password
+  // Passwords are never read back from the service.
   $("#accountPassword").value = "";
   $("#accountConfirmPassword").value = "";
 
   openModal("accountModal");
 });
 
-
-// ====================================
-// SAVE ACCOUNT SETTINGS
-// ====================================
-
+// Save profile details and any optional password change.
 $("#accountForm").addEventListener("submit", async event => {
-
   event.preventDefault();
 
   if (!currentAccountUser) {
@@ -403,27 +1144,22 @@ $("#accountForm").addEventListener("submit", async event => {
     return;
   }
 
-  // Retrieve input values
   const firstName = $("#accountFirstName").value.trim();
   const email = $("#accountEmail").value.trim();
   const zipCode = $("#accountZip").value.trim();
-
   const password = $("#accountPassword").value;
   const confirmPassword = $("#accountConfirmPassword").value;
 
-  // Validate first name
   if (!firstName) {
     showToast("Invalid Name", "Please enter your first name.");
     return;
   }
 
-  // Validate ZIP code
   if (!/^[0-9]{5}$/.test(zipCode)) {
     showToast("Invalid ZIP Code", "Enter a five-digit ZIP code.");
     return;
   }
 
-  // Validate password confirmation
   if (password !== confirmPassword) {
     showToast("Password Error", "Passwords do not match.");
     return;
@@ -434,7 +1170,6 @@ $("#accountForm").addEventListener("submit", async event => {
     return;
   }
 
-  // Disable save button while updating
   const saveButton = event.target.querySelector(
     'button[type="submit"]'
   );
@@ -443,11 +1178,7 @@ $("#accountForm").addEventListener("submit", async event => {
   saveButton.textContent = "Saving...";
 
   try {
-
-    // ====================================
-    // UPDATE FIRST NAME AND ZIP CODE
-    // ====================================
-
+    // Update the first name and ZIP code in user metadata.
     const { error: profileError } =
       await supabaseClient.auth.updateUser({
         data: {
@@ -460,68 +1191,46 @@ $("#accountForm").addEventListener("submit", async event => {
       throw profileError;
     }
 
-    // ====================================
-    // UPDATE EMAIL IF CHANGED
-    // ====================================
-
-    const emailChanged =
-      email !== currentAccountUser.email;
+    // Request an email change only when the address is different.
+    const emailChanged = email !== currentAccountUser.email;
 
     if (emailChanged) {
-
       const { error: emailError } =
-        await supabaseClient.auth.updateUser({
-          email: email
-        });
+        await supabaseClient.auth.updateUser({ email });
 
       if (emailError) {
         throw emailError;
       }
     }
 
-    // ====================================
-    // UPDATE PASSWORD IF PROVIDED
-    // ====================================
-
+    // Change the password only when a new one was entered.
     if (password) {
-
       const { error: passwordError } =
-        await supabaseClient.auth.updateUser({
-          password: password
-        });
+        await supabaseClient.auth.updateUser({ password });
 
       if (passwordError) {
         throw passwordError;
       }
     }
 
-    // Refresh account information
     await loadAccount();
 
-    // Clear password fields
     $("#accountPassword").value = "";
     $("#accountConfirmPassword").value = "";
-
     closeModal("accountModal");
 
     if (emailChanged) {
-
       showToast(
         "Account Updated",
         "Check your email for any required confirmation."
       );
-
     } else {
-
       showToast(
         "Account Updated",
         "Your account information has been saved."
       );
-
     }
-
   } catch (error) {
-
     console.error("Account update error:", error);
 
     showToast(
@@ -529,53 +1238,52 @@ $("#accountForm").addEventListener("submit", async event => {
       error.message || "Unable to update account."
     );
 
-    // Earlier updates may have succeeded, so refresh the user.
+    // Refresh the user because an earlier profile update may have worked.
     await loadAccount();
-
   } finally {
-
     saveButton.disabled = false;
     saveButton.textContent = "Save Changes";
-
   }
-
 });
 
-// ====================================
-// DELETE ACCOUNT
-// ====================================
- const confirmDeleteButton = document.getElementById("confirmDeleteAccountButton");
+/* =========================================================
+   Account deletion
+   ========================================================= */
+
+const deleteAccountButton = $("#deleteAccountButton");
+const deleteConfirmationInput = $("#deleteConfirmationInput");
+const confirmDeleteButton = $("#confirmDeleteAccountButton");
+
+// Show the confirmation modal before starting account deletion.
 deleteAccountButton.addEventListener("click", () => {
   deleteConfirmationInput.value = "";
   confirmDeleteButton.disabled = true;
- 
 
-  // Close Account Settings
   closeModal("accountModal");
-
-  // Open the delete confirmation popup
   openModal("deleteAccountModal");
-
-  // Make sure the confirmation input receives focus
   deleteConfirmationInput.focus();
 });
 
-// Enable deletion only when the user types DELETE
+// Require the user to type DELETE before enabling the final button.
 deleteConfirmationInput.addEventListener("input", () => {
   confirmDeleteButton.disabled =
     deleteConfirmationInput.value !== "DELETE";
 });
 
-// Delete the authenticated user's account
+// Call the Supabase Edge Function that removes the signed-in account.
 confirmDeleteButton.addEventListener("click", async () => {
-  if (deleteConfirmationInput.value !== "DELETE") return;
+  if (deleteConfirmationInput.value !== "DELETE") {
+    return;
+  }
 
   confirmDeleteButton.disabled = true;
   confirmDeleteButton.textContent = "Deleting...";
 
   try {
-    const { data: sessionData, error: sessionError } =
-      await supabaseClient.auth.getSession();
+    const {
+      data: sessionData,
+      error: sessionError
+    } = await supabaseClient.auth.getSession();
 
     if (sessionError || !sessionData.session) {
       throw new Error("Please sign in again.");
@@ -585,7 +1293,8 @@ confirmDeleteButton.addEventListener("click", async () => {
       "delete-account",
       {
         headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`
+          Authorization:
+            "Bearer " + sessionData.session.access_token
         }
       }
     );
@@ -598,12 +1307,10 @@ confirmDeleteButton.addEventListener("click", async () => {
       throw new Error(data?.error || "Account deletion failed.");
     }
 
-    // Clear the local authentication session
+    // Clear the local session and return to the sign-in page.
     await supabaseClient.auth.signOut({ scope: "local" });
 
-    // Return to the sign-in screen
     closeModal("deleteAccountModal");
-
     currentAccountUser = null;
 
     appShell.style.display = "none";
@@ -611,9 +1318,9 @@ confirmDeleteButton.addEventListener("click", async () => {
     loginForm.reset();
 
     showToast("Account Deleted", "Your account has been deleted.");
-
   } catch (error) {
     console.error("Account deletion error:", error);
+
     showToast(
       "Deletion Failed",
       error.message || "Please try again."
@@ -624,41 +1331,42 @@ confirmDeleteButton.addEventListener("click", async () => {
   }
 });
 
-// ====================================
-// USER LOGIN
-// ====================================
+/* =========================================================
+   Sign-in, sign-up, and session restoration
+   ========================================================= */
 
-const loginForm = document.querySelector("#loginForm");
-const loginPage = document.querySelector("#loginPage");
-const appShell = document.querySelector(".app-shell");
-const loginMessage = document.querySelector("#loginMessage");
+const loginForm = $("#loginForm");
+const loginPage = $("#loginPage");
+const appShell = $(".app-shell");
+const loginMessage = $("#loginMessage");
+const signupForm = $("#signupForm");
+const showSignupButton = $("#showSignupButton");
+const backToLoginButton = $("#backToLoginButton");
+const signOutButton = $("#signOutButton");
 
-// Show the main application after successful login
+// Reveal the app after authentication and load the user's data.
 async function showMainApp() {
-
   loginPage.style.display = "none";
   appShell.style.display = "flex";
 
-  // Load the signed-in user's account information
   await loadAccount();
-
   await loadAppliances();
-
 }
 
-// Handle user sign in
-loginForm.addEventListener("submit", async (event) => {
+// Sign in with the email and password entered by the user.
+loginForm.addEventListener("submit", async event => {
   event.preventDefault();
 
-  const email = document.querySelector("#loginEmail").value.trim();
-  const password = document.querySelector("#loginPassword").value;
+  const email = $("#loginEmail").value.trim();
+  const password = $("#loginPassword").value;
 
   loginMessage.textContent = "Signing in...";
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
+  const { data, error } =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
 
   if (error) {
     loginMessage.textContent = error.message;
@@ -670,11 +1378,8 @@ loginForm.addEventListener("submit", async (event) => {
     showMainApp();
   }
 });
-// Switch between Sign In and Sign Up
-const signupForm = document.querySelector("#signupForm");
-const showSignupButton = document.querySelector("#showSignupButton");
-const backToLoginButton = document.querySelector("#backToLoginButton");
 
+// Switch from sign-in to sign-up view.
 showSignupButton.addEventListener("click", () => {
   loginForm.style.display = "none";
   signupForm.style.display = "flex";
@@ -682,27 +1387,33 @@ showSignupButton.addEventListener("click", () => {
   loginMessage.style.display = "none";
 });
 
+// Return from sign-up to sign-in view.
 backToLoginButton.addEventListener("click", () => {
   signupForm.style.display = "none";
   loginForm.style.display = "flex";
   showSignupButton.parentElement.style.display = "";
   loginMessage.style.display = "";
 });
-// Register a new Havenly user with Supabase
-signupForm.addEventListener("submit", async (event) => {
+
+// Create an account in Supabase.
+signupForm.addEventListener("submit", async event => {
   event.preventDefault();
 
-  const email = document.querySelector("#signupEmail").value.trim();
-  const password = document.querySelector("#signupPassword").value;
-  const usernameValue = document.querySelector("#signupUsername").value.trim();
-  const signupMessage = document.querySelector("#signupMessage");
+  const email = $("#signupEmail").value.trim();
+  const password = $("#signupPassword").value;
+  const username = $("#signupUsername").value.trim();
+  const signupMessage = $("#signupMessage");
 
   signupMessage.textContent = "Creating your account...";
 
   const { data, error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password,
-    options: { data: { username: usernameValue } }
+    email,
+    password,
+    options: {
+      data: {
+        username
+      }
+    }
   });
 
   if (error) {
@@ -715,10 +1426,12 @@ signupForm.addEventListener("submit", async (event) => {
     showMainApp();
   } else {
     signupMessage.textContent =
-      "Account created! Please check your email to confirm your account, then sign in.";
+      "Account created! Please check your email to confirm your " +
+      "account, then sign in.";
   }
 });
-// Keep the user signed in after refreshing the page
+
+// Restore an existing Supabase session after a page refresh.
 async function checkLoginSession() {
   const { data, error } = await supabaseClient.auth.getSession();
 
@@ -732,11 +1445,10 @@ async function checkLoginSession() {
   }
 }
 
-// Check login status when the page loads
+// Check for an existing session when the page first loads.
 checkLoginSession();
-// Sign out
-const signOutButton = document.querySelector("#signOutButton");
 
+// Sign out and clear the previous user's information from the page.
 signOutButton.addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signOut();
 
@@ -745,23 +1457,22 @@ signOutButton.addEventListener("click", async () => {
     return;
   }
 
-  // Clear the previous user's account information
-currentAccountUser = null;
-appliances = [];
-renderAppliances();
+  currentAccountUser = null;
+  appliances = [];
+  appliancesLoading = true;
 
-// Reset displayed account information
-$("#sidebarUsername").textContent = "Your Name";
-$("#homeUsername").textContent = "there";
+  // Reset the account information displayed in the interface.
+  $("#sidebarUsername").textContent = "Your Name";
+  $("#homeUsername").textContent = "there";
 
-const maxUsername = $("#maxUsername");
+  const maxUsername = $("#maxUsername");
 
-if (maxUsername) {
-  maxUsername.textContent = "there";
-}
+  if (maxUsername) {
+    maxUsername.textContent = "there";
+  }
 
-$(".avatar-small").textContent = "?";
-$(".top-avatar").textContent = "?";
+  $(".avatar-small").textContent = "?";
+  $(".top-avatar").textContent = "?";
 
   appShell.style.display = "none";
   loginPage.style.display = "flex";

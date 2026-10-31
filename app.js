@@ -1117,7 +1117,7 @@ $("#selectTime").addEventListener("click", () => {
 });
 
 // Update the selected star rating.
-$("#starInput button").forEach((button, selectedIndex) => {
+$$("#starInput button").forEach((button, selectedIndex) => {
   button.addEventListener("click", () => {
     $$("#starInput button").forEach((star, starIndex) => {
       star.classList.toggle("selected", starIndex <= selectedIndex);

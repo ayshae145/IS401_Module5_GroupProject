@@ -289,5 +289,481 @@ navigate(location.hash.slice(1) || 'home', false);
 renderCalendar();
 renderEvents();
 renderMiniEvents();
-loadAppliances();
 renderProfessionals();
+
+// ====================================
+// ACCOUNT SETTINGS - SUPABASE
+// ====================================
+
+// The currently signed-in user's account information
+let currentAccountUser = null;
+
+
+// ====================================
+// LOAD ACCOUNT INFORMATION
+// ====================================
+
+async function loadAccount() {
+
+  // Get the currently authenticated user
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error || !data.user) {
+    console.error("Unable to load account:", error);
+    return;
+  }
+
+  currentAccountUser = data.user;
+
+  updateAccountDisplay();
+}
+
+
+// ====================================
+// UPDATE NAME THROUGHOUT THE APP
+// ====================================
+
+function updateAccountDisplay() {
+
+  if (!currentAccountUser) return;
+
+  // Retrieve the first name from Supabase metadata
+  const firstName =
+    currentAccountUser.user_metadata?.first_name || "";
+
+  // Use a friendly placeholder if no name exists
+  const displayName = firstName || "Your Name";
+  const greetingName = firstName || "there";
+
+  // Sidebar
+  $("#sidebarUsername").textContent = displayName;
+
+  // Homepage greeting
+  $("#homeUsername").textContent = greetingName;
+
+  // Maintenance Max greeting
+  const maxUsername = $("#maxUsername");
+
+  if (maxUsername) {
+    maxUsername.textContent = greetingName;
+  }
+
+  // Profile initials
+  const initial = firstName
+    ? firstName.charAt(0).toUpperCase()
+    : "?";
+
+  $(".avatar-small").textContent = initial;
+  $(".top-avatar").textContent = initial;
+}
+
+
+// ====================================
+// OPEN ACCOUNT SETTINGS
+// ====================================
+
+$("#accountSettingsButton").addEventListener("click", async () => {
+
+  // Refresh account information from Supabase
+  await loadAccount();
+
+  if (!currentAccountUser) {
+    showToast("Error", "Please sign in again.");
+    return;
+  }
+
+  // Fill form with current account information
+  $("#accountFirstName").value =
+    currentAccountUser.user_metadata?.first_name || "";
+
+  $("#accountEmail").value =
+    currentAccountUser.email || "";
+
+  $("#accountZip").value =
+    currentAccountUser.user_metadata?.zip_code || "";
+
+  // Never display an existing password
+  $("#accountPassword").value = "";
+  $("#accountConfirmPassword").value = "";
+
+  openModal("accountModal");
+});
+
+
+// ====================================
+// SAVE ACCOUNT SETTINGS
+// ====================================
+
+$("#accountForm").addEventListener("submit", async event => {
+
+  event.preventDefault();
+
+  if (!currentAccountUser) {
+    showToast("Error", "Please sign in again.");
+    return;
+  }
+
+  // Retrieve input values
+  const firstName = $("#accountFirstName").value.trim();
+  const email = $("#accountEmail").value.trim();
+  const zipCode = $("#accountZip").value.trim();
+
+  const password = $("#accountPassword").value;
+  const confirmPassword = $("#accountConfirmPassword").value;
+
+  // Validate first name
+  if (!firstName) {
+    showToast("Invalid Name", "Please enter your first name.");
+    return;
+  }
+
+  // Validate ZIP code
+  if (!/^[0-9]{5}$/.test(zipCode)) {
+    showToast("Invalid ZIP Code", "Enter a five-digit ZIP code.");
+    return;
+  }
+
+  // Validate password confirmation
+  if (password !== confirmPassword) {
+    showToast("Password Error", "Passwords do not match.");
+    return;
+  }
+
+  if (password && password.length < 8) {
+    showToast("Password Error", "Use at least eight characters.");
+    return;
+  }
+
+  // Disable save button while updating
+  const saveButton = event.target.querySelector(
+    'button[type="submit"]'
+  );
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Saving...";
+
+  try {
+
+    // ====================================
+    // UPDATE FIRST NAME AND ZIP CODE
+    // ====================================
+
+    const { error: profileError } =
+      await supabaseClient.auth.updateUser({
+        data: {
+          first_name: firstName,
+          zip_code: zipCode
+        }
+      });
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    // ====================================
+    // UPDATE EMAIL IF CHANGED
+    // ====================================
+
+    const emailChanged =
+      email !== currentAccountUser.email;
+
+    if (emailChanged) {
+
+      const { error: emailError } =
+        await supabaseClient.auth.updateUser({
+          email: email
+        });
+
+      if (emailError) {
+        throw emailError;
+      }
+    }
+
+    // ====================================
+    // UPDATE PASSWORD IF PROVIDED
+    // ====================================
+
+    if (password) {
+
+      const { error: passwordError } =
+        await supabaseClient.auth.updateUser({
+          password: password
+        });
+
+      if (passwordError) {
+        throw passwordError;
+      }
+    }
+
+    // Refresh account information
+    await loadAccount();
+
+    // Clear password fields
+    $("#accountPassword").value = "";
+    $("#accountConfirmPassword").value = "";
+
+    closeModal("accountModal");
+
+    if (emailChanged) {
+
+      showToast(
+        "Account Updated",
+        "Check your email for any required confirmation."
+      );
+
+    } else {
+
+      showToast(
+        "Account Updated",
+        "Your account information has been saved."
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error("Account update error:", error);
+
+    showToast(
+      "Update Error",
+      error.message || "Unable to update account."
+    );
+
+    // Earlier updates may have succeeded, so refresh the user.
+    await loadAccount();
+
+  } finally {
+
+    saveButton.disabled = false;
+    saveButton.textContent = "Save Changes";
+
+  }
+
+});
+
+// ====================================
+// DELETE ACCOUNT
+// ====================================
+ const confirmDeleteButton = document.getElementById("confirmDeleteAccountButton");
+deleteAccountButton.addEventListener("click", () => {
+  deleteConfirmationInput.value = "";
+  confirmDeleteButton.disabled = true;
+ 
+
+  // Close Account Settings
+  closeModal("accountModal");
+
+  // Open the delete confirmation popup
+  openModal("deleteAccountModal");
+
+  // Make sure the confirmation input receives focus
+  deleteConfirmationInput.focus();
+});
+
+// Enable deletion only when the user types DELETE
+deleteConfirmationInput.addEventListener("input", () => {
+  confirmDeleteButton.disabled =
+    deleteConfirmationInput.value !== "DELETE";
+});
+
+// Delete the authenticated user's account
+confirmDeleteButton.addEventListener("click", async () => {
+  if (deleteConfirmationInput.value !== "DELETE") return;
+
+  confirmDeleteButton.disabled = true;
+  confirmDeleteButton.textContent = "Deleting...";
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error("Please sign in again.");
+    }
+
+    const { data, error } = await supabaseClient.functions.invoke(
+      "delete-account",
+      {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        }
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || "Account deletion failed.");
+    }
+
+    // Clear the local authentication session
+    await supabaseClient.auth.signOut({ scope: "local" });
+
+    // Return to the sign-in screen
+    closeModal("deleteAccountModal");
+
+    currentAccountUser = null;
+
+    appShell.style.display = "none";
+    loginPage.style.display = "flex";
+    loginForm.reset();
+
+    showToast("Account Deleted", "Your account has been deleted.");
+
+  } catch (error) {
+    console.error("Account deletion error:", error);
+    showToast(
+      "Deletion Failed",
+      error.message || "Please try again."
+    );
+  } finally {
+    confirmDeleteButton.disabled = false;
+    confirmDeleteButton.textContent = "Permanently Delete Account";
+  }
+});
+
+// ====================================
+// USER LOGIN
+// ====================================
+
+const loginForm = document.querySelector("#loginForm");
+const loginPage = document.querySelector("#loginPage");
+const appShell = document.querySelector(".app-shell");
+const loginMessage = document.querySelector("#loginMessage");
+
+// Show the main application after successful login
+async function showMainApp() {
+
+  loginPage.style.display = "none";
+  appShell.style.display = "flex";
+
+  // Load the signed-in user's account information
+  await loadAccount();
+
+  await loadAppliances();
+
+}
+
+// Handle user sign in
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.querySelector("#loginEmail").value.trim();
+  const password = document.querySelector("#loginPassword").value;
+
+  loginMessage.textContent = "Signing in...";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    loginMessage.textContent = error.message;
+    return;
+  }
+
+  if (data.user) {
+    loginMessage.textContent = "";
+    showMainApp();
+  }
+});
+// Switch between Sign In and Sign Up
+const signupForm = document.querySelector("#signupForm");
+const showSignupButton = document.querySelector("#showSignupButton");
+const backToLoginButton = document.querySelector("#backToLoginButton");
+
+showSignupButton.addEventListener("click", () => {
+  loginForm.style.display = "none";
+  signupForm.style.display = "flex";
+  showSignupButton.parentElement.style.display = "none";
+  loginMessage.style.display = "none";
+});
+
+backToLoginButton.addEventListener("click", () => {
+  signupForm.style.display = "none";
+  loginForm.style.display = "flex";
+  showSignupButton.parentElement.style.display = "";
+  loginMessage.style.display = "";
+});
+// Register a new Havenly user with Supabase
+signupForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.querySelector("#signupEmail").value.trim();
+  const password = document.querySelector("#signupPassword").value;
+  const usernameValue = document.querySelector("#signupUsername").value.trim();
+  const signupMessage = document.querySelector("#signupMessage");
+
+  signupMessage.textContent = "Creating your account...";
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: email,
+    password: password,
+    options: { data: { username: usernameValue } }
+  });
+
+  if (error) {
+    signupMessage.textContent = error.message;
+    return;
+  }
+
+  if (data.session) {
+    signupMessage.textContent = "";
+    showMainApp();
+  } else {
+    signupMessage.textContent =
+      "Account created! Please check your email to confirm your account, then sign in.";
+  }
+});
+// Keep the user signed in after refreshing the page
+async function checkLoginSession() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error("Session error:", error.message);
+    return;
+  }
+
+  if (data.session) {
+    showMainApp();
+  }
+}
+
+// Check login status when the page loads
+checkLoginSession();
+// Sign out
+const signOutButton = document.querySelector("#signOutButton");
+
+signOutButton.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    alert("Sign out failed: " + error.message);
+    return;
+  }
+
+  // Clear the previous user's account information
+currentAccountUser = null;
+appliances = [];
+renderAppliances();
+
+// Reset displayed account information
+$("#sidebarUsername").textContent = "Your Name";
+$("#homeUsername").textContent = "there";
+
+const maxUsername = $("#maxUsername");
+
+if (maxUsername) {
+  maxUsername.textContent = "there";
+}
+
+$(".avatar-small").textContent = "?";
+$(".top-avatar").textContent = "?";
+
+  appShell.style.display = "none";
+  loginPage.style.display = "flex";
+  loginForm.reset();
+});

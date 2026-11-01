@@ -531,6 +531,7 @@ async function removeAppliance(applianceId) {
   }
 
   renderAppliances();
+  navigate("appliances");
   showToast("Appliance removed", appliance.name + " was removed.");
 }
 
@@ -672,6 +673,8 @@ function openAppliance(name) {
   if (!selectedAppliance) {
     return;
   }
+
+  $("#deleteDetailApplianceButton").disabled = false;
 
   $("#detailName").textContent = selectedAppliance.name;
   $("#detailMeta").textContent =
@@ -863,6 +866,11 @@ window.addEventListener("popstate", () => {
    Main page controls
    ========================================================= */
 
+$("#deleteDetailApplianceButton").addEventListener("click", () => {
+  if (selectedAppliance) {
+    removeAppliance(selectedAppliance.id);
+  }
+});
 // Mobile sidebar and modal buttons.
 $("#menuButton").addEventListener("click", () => {
   $("#sidebar").classList.toggle("open");

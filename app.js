@@ -47,6 +47,7 @@ const pageNames = {
 
 let currentPage = "home";
 let selectedAppliance = null;
+let maintenanceApplianceFilter = null;
 
 // Keep the sample maintenance events used by the calendar and list.
 let events = [
@@ -270,9 +271,13 @@ function renderMiniEvents() {
     .filter(event => event.status !== "Completed")
     .slice(0, 3);
 
+    
+
   $("#miniEventList").innerHTML = upcomingEvents
     .map(event => {
       const date = formatDate(event.date);
+
+      
 
       return (
         '<div class="mini-event">' +
@@ -289,6 +294,21 @@ function renderMiniEvents() {
       );
     })
     .join("");
+}
+
+function populateEventAppliances() {
+  const select = $("#eventAppliance");
+  const selectedValue = select.value;
+
+  select.innerHTML =
+    '<option value="">General home maintenance</option>' +
+    appliances.map(appliance =>
+      '<option value="' + appliance.id + '">' +
+        appliance.name +
+      '</option>'
+    ).join("");
+
+  select.value = selectedValue;
 }
 
 // Draw the September 2026 calendar and place events on their dates.
@@ -350,13 +370,27 @@ function renderCalendar() {
 
 // Draw the maintenance list in date order and connect completion buttons.
 function renderEvents() {
-  const sortedEvents = [...events].sort((first, second) =>
-    first.date.localeCompare(second.date)
-  );
+  const sortedEvents = events
+    .filter(event =>
+      !maintenanceApplianceFilter ||
+      String(event.applianceId) === String(maintenanceApplianceFilter)
+    )
+    .sort((first, second) => first.date.localeCompare(second.date));
 
   $("#eventList").innerHTML = sortedEvents
     .map(event => {
       const date = formatDate(event.date);
+      
+      const linkedAppliance = appliances.find(
+  appliance => String(appliance.id) === String(event.applianceId)
+);
+
+const applianceLabel = linkedAppliance
+  ? " · " + linkedAppliance.name
+  : "";
+
+
+
       const eventIndex = events.indexOf(event);
       const completionControl =
         event.status !== "Completed"
@@ -373,7 +407,7 @@ function renderEvents() {
           "</div>" +
           '<div class="event-card-body">' +
             "<strong>" + event.name + "</strong>" +
-            "<small>" + event.category + " · " + event.time + "</small>" +
+            "<small>" + event.category + " · " + event.time + applianceLabel + "</small>" +
             '<p class="event-description">' + event.description + "</p>" +
           "</div>" +
           '<span class="status-pill ' + statusClass(event.status) + '">' +
@@ -938,10 +972,12 @@ $("#menuButton").addEventListener("click", () => {
 });
 
 $("#openEventModal").addEventListener("click", () => {
+  populateEventAppliances();
   openModal("eventModal");
 });
 
 $("#floatingAdd").addEventListener("click", () => {
+  populateEventAppliances();
   openModal("eventModal");
 });
 
@@ -949,6 +985,24 @@ $("#openApplianceModal").addEventListener("click", () => {
   $("#applianceForm").reset();
   openModal("applianceModal");
 });
+
+
+$("#viewMaintenanceHistoryButton").addEventListener("click", () => {
+  maintenanceApplianceFilter = selectedAppliance?.id || null;
+
+  navigate("maintenance");
+
+  $("#calendarView").classList.add("hidden");
+  $("#listView").classList.remove("hidden");
+
+  $$(".segment").forEach(button => {
+    button.classList.toggle("active", button.dataset.view === "list");
+  });
+
+  renderEvents();
+});
+
+
 
 // Switch between the calendar and list views on the Maintenance page.
 $$(".segment").forEach(button => {
@@ -986,6 +1040,7 @@ $("#eventForm").addEventListener("submit", event => {
   events.push({
     name: formData.get("name"),
     category: formData.get("category"),
+    applianceId: formData.get("applianceId") || null,
     date: formData.get("date"),
     time: displayTime,
     description:

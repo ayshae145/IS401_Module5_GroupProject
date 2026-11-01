@@ -39,9 +39,25 @@
         <form id="signupForm" style="display: none;">
           <h2>Create an Account</h2>
 
-          <label for="signupUsername">Username</label>
-          <input type="text" id="signupUsername" placeholder="Choose a username" required>
+          <label for="signupFirstName">First Name (Optional)</label>
+          <input
+            type="text"
+            id="signupFirstName"
+            placeholder="Enter your first name"
+            autocomplete="given-name"
+            maxlength="50"
+          >
 
+          <label for="signupZip">ZIP Code (Optional)</label>
+          <input
+            type="text"
+            id="signupZip"
+            placeholder="Enter your ZIP code"
+            autocomplete="postal-code"
+            inputmode="numeric"
+            pattern="[0-9]{5}"
+            maxlength="5"
+          >
           <label for="signupEmail">Email</label>
           <input type="email" id="signupEmail" placeholder="Enter your email" autocomplete="email" required>
 
@@ -144,7 +160,14 @@
               <span class="notification-dot"></span>
             </button>
 
-            <button class="top-avatar">AE</button>
+            <button
+              class="top-avatar"
+              id="topAccountButton"
+              type="button"
+              aria-label="Open Account Settings"
+              title="Account Settings">
+              ?
+            </button>
           </div>
         </header>
 
@@ -844,19 +867,18 @@
 
               <aside class="assistant-side panel">
                 <span class="eyebrow">YOUR HOME CONTEXT</span>
-                <h3>Max knows your home</h3>
-                <p>
-                  Ask questions about an appliance and Max will use its care
-                  history to give more helpful guidance.
-                </p>
+                <h3>Your home context</h3>
+                  <p>
+                    Max can help answer your home maintenance questions.
+                    Personalized appliance information is coming soon.
+                  </p>
 
-                <div class="context-list">
-                  <button class="context-appliance" data-appliance="Samsung Smart Refrigerator">
-                    <span class="mini-appliance-icon">▤</span>
-                    <div>
-                      <strong>Samsung Refrigerator</strong>
-                      <small>Last serviced Aug 15</small>
-                    </div>
+                <div class="context-list" id="maxApplianceContext">
+                  <p>
+                    Your saved appliances will appear here
+                    when appliance integration is enabled.
+                  </p>
+                </div>
                     <span>→</span>
                   </button>
 
@@ -949,32 +971,33 @@
           <div class="form-grid">
             <label>
               Appliance name
-              <input name="name" required placeholder="e.g. Bosch Dishwasher">
-            </label>
+              <input name="name" required>
+              </label>
 
             <label>
               Appliance type
-              <input name="type" required placeholder="e.g. Dishwasher">
-            </label>
+             <input name="type" required>
+             </label>
 
             <label>
               Brand
-              <input name="brand" placeholder="e.g. Bosch">
-            </label>
+              <input name="brand">
+              </label>
 
             <label>
               Model
-              <input name="model" placeholder="e.g. SHPM65Z55N">
-            </label>
+              <input name="model">
+              </label>
 
             <label>
               Category
-              <select name="category">
-                <option>Kitchen</option>
-                <option>Laundry</option>
-                <option>HVAC</option>
-                <option>Plumbing</option>
-                <option>General</option>
+              <select name="category" required>
+                <option value="" selected disabled>Select a category</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Laundry">Laundry</option>
+                <option value="HVAC">HVAC</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="General">General</option>
               </select>
             </label>
 
@@ -1073,7 +1096,7 @@
 
           <div class="account-fields">
             <label>
-              First Name
+              First Name (Optional)
               <input
                 type="text"
                 name="firstName"
@@ -1081,7 +1104,6 @@
                 placeholder="Enter your first name"
                 maxlength="50"
                 autocomplete="given-name"
-                required
               >
             </label>
 
@@ -1098,7 +1120,7 @@
             </label>
 
             <label>
-              ZIP Code
+              ZIP Code (Optional)
               <input
                 type="text"
                 name="zipCode"
@@ -1108,7 +1130,6 @@
                 maxlength="5"
                 inputmode="numeric"
                 title="Enter a five-digit ZIP code."
-                required
               >
             </label>
           </div>

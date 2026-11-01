@@ -431,23 +431,23 @@ async function loadAppliances() {
       id: appliance.appliance_id,
       name: appliance.name,
       type: appliance.type,
-      brand: appliance.brand || "Unknown brand",
-      model: appliance.model || "Model not added",
+      brand: appliance.brand || "",
+      model: appliance.model || "",
       category: appliance.category,
 
       last: appliance.last_maintenance_date
         ? formatDate(appliance.last_maintenance_date).full
         : "Not yet serviced",
 
-      // These are placeholder values used by the current page design.
-      next: "Set a reminder",
-      status: "Up to date",
+     // No maintenance status or next date has been calculated yet.
+      next: "Not scheduled",
+      status: "Not recorded",
       icon: "▤",
       tone: "",
 
       purchase: appliance.purchase_date
-        ? formatDate(appliance.purchase_date).full
-        : "Recently added"
+    ? formatDate(appliance.purchase_date).full
+    : "Not provided"
     }));
   } catch (error) {
     console.error("Supabase appliance error:", error);
@@ -616,9 +616,10 @@ function renderAppliances() {
         "</button>" +
       "</div>";
 
-    $("#emptyStateAddAppliance").addEventListener("click", () => {
-      openModal("applianceModal");
-    });
+   $("#emptyStateAddAppliance").addEventListener("click", () => {
+  $("#applianceForm").reset();
+  openModal("applianceModal");
+});
 
     return;
   }
@@ -696,13 +697,24 @@ function openAppliance(name) {
     return;
   }
 
+  $("#deleteDetailApplianceButton").disabled = false;
+
   $("#detailName").textContent = selectedAppliance.name;
-  $("#detailMeta").textContent =
-    selectedAppliance.brand +
-    " · " +
-    selectedAppliance.model +
-    " · Purchased " +
-    selectedAppliance.purchase;
+    const applianceDetails = [];
+
+  if (selectedAppliance.brand) {
+    applianceDetails.push(selectedAppliance.brand);
+  }
+
+  if (selectedAppliance.model) {
+    applianceDetails.push(selectedAppliance.model);
+  }
+
+  if (selectedAppliance.purchase !== "Not provided") {
+    applianceDetails.push("Purchased " + selectedAppliance.purchase);
+  }
+
+  $("#detailMeta").textContent = applianceDetails.join(" · ");
 
   $("#detailIcon").className =
     "appliance-large-icon " + selectedAppliance.tone;
@@ -790,11 +802,12 @@ function addChatMessage(text, type) {
   let messageList = $("#chatMessageList");
 
   if (!messageList) {
-    $("#chatWelcome").remove();
+    $("#chatWelcome")?.remove();
 
     messageList = document.createElement("div");
     messageList.id = "chatMessageList";
     messageList.className = "chat-message-list";
+
     $("#chatWindow").appendChild(messageList);
   }
 
@@ -802,56 +815,106 @@ function addChatMessage(text, type) {
   row.className = "chat-message " + type;
 
   if (type === "max") {
-    row.innerHTML =
-      '<span class="max-avatar">✦</span>' +
-      '<div class="chat-bubble">' + text + "</div>";
-  } else {
-    row.innerHTML = '<div class="chat-bubble">' + text + "</div>";
+    const avatar = document.createElement("span");
+    avatar.className = "max-avatar";
+    avatar.textContent = "✦";
+
+    row.appendChild(avatar);
   }
 
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
+  bubble.textContent = text;
+
+  // Preserve line breaks in AI responses.
+  bubble.style.whiteSpace = "pre-wrap";
+
+  row.appendChild(bubble);
   messageList.appendChild(row);
-  $("#chatWindow").scrollTop = $("#chatWindow").scrollHeight;
+
+  $("#chatWindow").scrollTop =
+    $("#chatWindow").scrollHeight;
+
+  return row;
 }
 
 // Respond to the user's prompt with the app's current sample guidance.
-function askMax(text) {
-  addChatMessage(text, "user");
+// Conversation history for the current page session.
+let maxConversation = [];
 
-  setTimeout(() => {
-    let response =
-      "I can help with that. Tell me a little more about what you’re " +
-      "noticing, and I’ll walk through safe next steps.";
+// Prevent overlapping AI requests.
+let maxIsResponding = false;
 
-    const lowerCaseText = text.toLowerCase();
+async function askMax(text) {
+  const message = text.trim();
 
-    if (lowerCaseText.includes("refrigerator")) {
-      response =
-        "For a buzzing refrigerator, first check that it is level and " +
-        "has a little space from the wall. The sound may come from the " +
-        "condenser fan, evaporator fan, or ice maker. If it is unusually " +
-        "loud, paired with warming food, or involves exposed wiring, " +
-        "unplug the appliance and contact a licensed technician.";
+  if (!message || maxIsResponding) {
+    return;
+  }
+
+  maxIsResponding = true;
+
+  const sendButton = $("#chatForm button");
+  sendButton.disabled = true;
+
+  addChatMessage(message, "user");
+
+  const pendingMessage = addChatMessage(
+    "Max is thinking...",
+    "max"
+  );
+
+  const nextConversation = [
+    ...maxConversation,
+    {
+      role: "user",
+      content: message,
+    },
+  ].slice(-20);
+
+  try {
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        "maintenance-max",
+        {
+          body: {
+            messages: nextConversation,
+          },
+        }
+      );
+
+    if (error) {
+      throw error;
     }
 
-    if (lowerCaseText.includes("appliance")) {
-      const applianceName = selectedAppliance
-        ? selectedAppliance.name
-        : "appliances";
-
-      response =
-        "I can help with your " +
-        applianceName +
-        ". What would you like to know about its maintenance or symptoms?";
+    if (!data || typeof data.reply !== "string") {
+      throw new Error("Invalid response from Max");
     }
 
-    if (lowerCaseText.includes("professional")) {
-      response =
-        "I found trusted local professionals who can help. Open the " +
-        "Professionals page to compare availability, ratings, and services.";
-    }
+    pendingMessage.querySelector(
+      ".chat-bubble"
+    ).textContent = data.reply;
 
-    addChatMessage(response, "max");
-  }, 450);
+    maxConversation = [
+      ...nextConversation,
+      {
+        role: "assistant",
+        content: data.reply,
+      },
+    ].slice(-20);
+
+  } catch (error) {
+    console.error("Maintenance Max error:", error);
+
+    pendingMessage.querySelector(
+      ".chat-bubble"
+    ).textContent =
+      "Sorry, I'm having trouble connecting right now. Please try again.";
+
+  } finally {
+    maxIsResponding = false;
+    sendButton.disabled = false;
+  }
 }
 
 /* =========================================================
@@ -887,6 +950,11 @@ window.addEventListener("popstate", () => {
    Main page controls
    ========================================================= */
 
+$("#deleteDetailApplianceButton").addEventListener("click", () => {
+  if (selectedAppliance) {
+    removeAppliance(selectedAppliance.id);
+  }
+});
 // Mobile sidebar and modal buttons.
 $("#menuButton").addEventListener("click", () => {
   $("#sidebar").classList.toggle("open");
@@ -901,6 +969,7 @@ $("#floatingAdd").addEventListener("click", () => {
 });
 
 $("#openApplianceModal").addEventListener("click", () => {
+  $("#applianceForm").reset();
   openModal("applianceModal");
 });
 
@@ -1048,14 +1117,14 @@ $("#applianceForm").addEventListener("submit", async event => {
       ? formatDate(savedAppliance.last_maintenance_date).full
       : "Not yet serviced",
 
-    next: "Set a reminder",
-    status: "Up to date",
+    next: "Not scheduled",
+    status: "Not recorded",
     icon: "▤",
     tone: "",
 
-    purchase: savedAppliance.purchase_date
-      ? formatDate(savedAppliance.purchase_date).full
-      : "Recently added"
+      purchase: savedAppliance.purchase_date
+    ? formatDate(savedAppliance.purchase_date).full
+    : "Not provided"
   };
 
   // Add the new record to the beginning of the visible appliance list.
@@ -1094,15 +1163,7 @@ $("#askMaxButton").addEventListener("click", () => {
 $$("[data-prompt]").forEach(button => {
   button.addEventListener("click", () => {
     const prompt = button.dataset.prompt;
-
-    if (prompt === "Ask About an Appliance") {
-      addChatMessage(
-        "Which appliance would you like to ask about?",
-        "max"
-      );
-    } else {
-      askMax(prompt);
-    }
+    askMax(prompt);
   });
 });
 
@@ -1273,6 +1334,11 @@ $("#accountSettingsButton").addEventListener("click", async () => {
   openModal("accountModal");
 });
 
+// Open Account Settings when the top-right profile icon is clicked.
+$("#topAccountButton").addEventListener("click", () => {
+  $("#accountSettingsButton").click();
+});
+
 // Save profile details and any optional password change.
 $("#accountForm").addEventListener("submit", async event => {
   event.preventDefault();
@@ -1288,15 +1354,11 @@ $("#accountForm").addEventListener("submit", async event => {
   const password = $("#accountPassword").value;
   const confirmPassword = $("#accountConfirmPassword").value;
 
-  if (!firstName) {
-    showToast("Invalid Name", "Please enter your first name.");
-    return;
-  }
 
-  if (!/^[0-9]{5}$/.test(zipCode)) {
-    showToast("Invalid ZIP Code", "Enter a five-digit ZIP code.");
-    return;
-  }
+ if (zipCode && !/^[0-9]{5}$/.test(zipCode)) {
+  showToast("Invalid ZIP Code", "Enter a five-digit ZIP code.");
+  return;
+}
 
   if (password !== confirmPassword) {
     showToast("Password Error", "Passwords do not match.");
@@ -1539,20 +1601,22 @@ signupForm.addEventListener("submit", async event => {
 
   const email = $("#signupEmail").value.trim();
   const password = $("#signupPassword").value;
-  const username = $("#signupUsername").value.trim();
+  const firstName = $("#signupFirstName").value.trim();
+  const zipCode = $("#signupZip").value.trim();
   const signupMessage = $("#signupMessage");
 
   signupMessage.textContent = "Creating your account...";
 
   const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        username
-      }
+  email,
+  password,
+  options: {
+    data: {
+      first_name: firstName,
+      zip_code: zipCode
     }
-  });
+  }
+});
 
   if (error) {
     signupMessage.textContent = error.message;

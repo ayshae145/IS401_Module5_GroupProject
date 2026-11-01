@@ -384,26 +384,41 @@
 }
 
 .appliance-delete-button {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: #fff;
-  color: var(--muted);
-  font-size: 20px;
-  line-height: 1;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid #efc6c1;
+  border-radius: 9px;
+  background: #fff4f2;
+  color: #a53e32;
+  font-size: 11px;
+  font-weight: 700;
   transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 
 .appliance-delete-button:hover {
-  border-color: #efc6c1;
-  background: #fff4f2;
-  color: #a53e32;
+  border-color: #d99b93;
+  background: #fce9e6;
 }
 
 .appliance-delete-button:focus-visible {
   outline: 3px solid rgba(165, 62, 50, 0.2);
   outline-offset: 2px;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .detail-hero {
+    flex-wrap: wrap;
+  }
+
+  .detail-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
 }

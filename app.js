@@ -47,6 +47,8 @@ const pageNames = {
 
 let currentPage = "home";
 let selectedAppliance = null;
+// Stores the appliance while its deletion is awaiting confirmation.
+let appliancePendingDelete = null;
 
 // Keep the sample maintenance events used by the calendar and list.
 let events = [
@@ -469,28 +471,34 @@ function iconFor(appliance) {
   );
 }
 
-// Ask for confirmation, delete the row from Supabase, then refresh the list.
+// Set the appliance name and open the confirmation modal.
+function openDeleteApplianceModal(applianceId) {
+  appliancePendingDelete = appliances.find(
+    appliance => String(appliance.id) === String(applianceId)
+  );
+
+  if (!appliancePendingDelete) {
+    return;
+  }
+
+  $("#deleteApplianceName").textContent =
+    appliancePendingDelete.name;
+
+  openModal("deleteApplianceModal");
+}
+
+// Delete the appliance from Supabase after the user confirms.
 async function removeAppliance(applianceId) {
   const appliance = appliances.find(
     item => String(item.id) === String(applianceId)
   );
 
   if (!appliance) {
-    return;
+    return false;
   }
-
-  const confirmed = window.confirm(
-    'Remove "' + appliance.name + '" from your appliance list?'
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  let deletedAppliance;
 
   try {
-    const { data, error } = await supabaseClient
+    const { data: deletedAppliance, error } = await supabaseClient
       .from("appliances")
       .delete()
       .eq("appliance_id", appliance.id)
@@ -501,38 +509,52 @@ async function removeAppliance(applianceId) {
       throw error;
     }
 
-    deletedAppliance = data;
+    if (!deletedAppliance) {
+      showToast(
+        "Appliance not deleted",
+        "Refresh the page and try again."
+      );
+      return false;
+    }
+
+    const deletingSelectedAppliance =
+      selectedAppliance &&
+      String(selectedAppliance.id) === String(appliance.id);
+
+    appliances = appliances.filter(
+      item => String(item.id) !== String(appliance.id)
+    );
+
+    if (deletingSelectedAppliance) {
+      selectedAppliance = null;
+      $("#deleteDetailApplianceButton").disabled = true;
+    }
+
+    if (
+      deletingSelectedAppliance &&
+      currentPage === "appliance-details"
+    ) {
+      navigate("appliances");
+    } else {
+      renderAppliances();
+    }
+
+    showToast(
+      "Appliance deleted",
+      appliance.name + " was removed."
+    );
+
+    return true;
   } catch (error) {
-    console.error("Appliance removal error:", error);
+    console.error("Appliance deletion error:", error);
+
     showToast(
       "Error",
-      error.message || "The appliance could not be removed."
+      error.message || "The appliance could not be deleted."
     );
-    return;
+
+    return false;
   }
-
-  if (!deletedAppliance) {
-    showToast(
-      "Appliance not removed",
-      "Refresh the page and try again."
-    );
-    return;
-  }
-
-  appliances = appliances.filter(
-    item => String(item.id) !== String(appliance.id)
-  );
-
-  if (
-    selectedAppliance &&
-    String(selectedAppliance.id) === String(appliance.id)
-  ) {
-    selectedAppliance = null;
-  }
-
-  renderAppliances();
-  navigate("appliances");
-  showToast("Appliance removed", appliance.name + " was removed.");
 }
 
 // Draw appliance cards, the loading state, or the first-appliance message.
@@ -625,8 +647,8 @@ function renderAppliances() {
               "</span>" +
               '<button class="appliance-delete-button" type="button"' +
                 ' data-delete-appliance="' + appliance.id + '"' +
-                ' aria-label="Remove appliance"' +
-                ' title="Remove appliance">×</button>' +
+                ' aria-label="Delete appliance"' +
+                ' title="Delete appliance">Delete</button>' +
             "</div>" +
           "</div>" +
           "<h3>" + appliance.name + "</h3>" +
@@ -656,11 +678,11 @@ function renderAppliances() {
     });
   });
 
-  // Keep the remove action from also opening the appliance detail page.
+  // Open the confirmation modal without opening the appliance details.
   $$("[data-delete-appliance]").forEach(button => {
     button.addEventListener("click", event => {
       event.stopPropagation();
-      removeAppliance(button.dataset.deleteAppliance);
+      openDeleteApplianceModal(button.dataset.deleteAppliance);
     });
   });
 }
@@ -703,7 +725,8 @@ function openAppliance(name) {
   $("#detailStatus").textContent = selectedAppliance.status;
   $("#detailStatus").className =
     "status-pill " + statusClass(selectedAppliance.status);
-
+  // Enable deletion after an appliance has been selected.
+  $("#deleteDetailApplianceButton").disabled = false;
   navigate("appliance-details");
 }
 
@@ -949,6 +972,41 @@ $("#openApplianceModal").addEventListener("click", () => {
   $("#applianceForm").reset();
   openModal("applianceModal");
 });
+
+// Open the same confirmation modal from the details page.
+$("#deleteDetailApplianceButton").addEventListener("click", () => {
+  if (selectedAppliance) {
+    openDeleteApplianceModal(selectedAppliance.id);
+  }
+});
+
+// Delete only after the user confirms in the modal.
+$("#confirmDeleteApplianceButton").addEventListener(
+  "click",
+  async () => {
+    if (!appliancePendingDelete) {
+      return;
+    }
+
+    const button = $("#confirmDeleteApplianceButton");
+    button.disabled = true;
+    button.textContent = "Deleting...";
+
+    try {
+      const wasDeleted = await removeAppliance(
+        appliancePendingDelete.id
+      );
+
+      if (wasDeleted) {
+        closeModal("deleteApplianceModal");
+        appliancePendingDelete = null;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = "Delete appliance";
+    }
+  }
+);
 
 // Switch between the calendar and list views on the Maintenance page.
 $$(".segment").forEach(button => {

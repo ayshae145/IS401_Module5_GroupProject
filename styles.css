@@ -422,3 +422,12 @@
     justify-content: space-between;
   }
 }
+
+/* Give the no-results message its own visual cue. */
+.appliance-no-results {
+  min-height: 280px;
+}
+
+.appliance-no-results .appliance-empty-icon {
+  background: var(--blue);
+}

@@ -626,7 +626,25 @@ function renderAppliances() {
 
   if (filteredAppliances.length === 0) {
     $("#applianceGrid").innerHTML =
-      '<div class="empty-state">No appliances match your search.</div>';
+      '<div class="appliance-empty-state appliance-no-results" role="status">' +
+        '<div class="appliance-empty-icon" aria-hidden="true">⌕</div>' +
+        '<span class="eyebrow">LET’S TRY ANOTHER SEARCH</span>' +
+        "<h2>No appliances found</h2>" +
+        "<p>" +
+          "We couldn’t find any appliances with these filters. " +
+          "Clear them to see your full list." +
+        "</p>" +
+        '<button class="button button-primary" id="resetApplianceFilters" type="button">' +
+          "Clear filters" +
+        "</button>" +
+      "</div>";
+
+    // Reset the search and category, then show the full appliance list.
+    $("#resetApplianceFilters").addEventListener("click", () => {
+      $("#applianceSearch").value = "";
+      $("#categoryFilter").value = "all";
+      renderAppliances();
+    });
 
     return;
   }

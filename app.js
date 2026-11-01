@@ -47,6 +47,7 @@ const pageNames = {
 
 let currentPage = "home";
 let selectedAppliance = null;
+let applianceBeingEdited = null;
 let maintenanceApplianceFilter = null;
 // Stores the appliance while its deletion is awaiting confirmation.
 let appliancePendingDelete = null;
@@ -478,6 +479,8 @@ async function loadAppliances() {
       brand: appliance.brand || "",
       model: appliance.model || "",
       category: appliance.category,
+      purchaseDate: appliance.purchase_date || "",
+      lastMaintenanceDate: appliance.last_maintenance_date || "",
 
       last: appliance.last_maintenance_date
         ? formatDate(appliance.last_maintenance_date).full
@@ -661,7 +664,9 @@ function renderAppliances() {
       "</div>";
 
    $("#emptyStateAddAppliance").addEventListener("click", () => {
+  applianceBeingEdited = null;
   $("#applianceForm").reset();
+  $("#applianceModalTitle").textContent = "Add appliance";
   openModal("applianceModal");
 });
 
@@ -707,6 +712,10 @@ function renderAppliances() {
               '">' +
                 appliance.status +
               "</span>" +
+              '<button class="appliance-edit-button" type="button"' +
+                ' data-edit-appliance="' + appliance.id + '"' +
+                ' aria-label="Edit appliance"' +
+                ' title="Edit appliance">Edit</button>' +
               '<button class="appliance-delete-button" type="button"' +
                 ' data-delete-appliance="' + appliance.id + '"' +
                 ' aria-label="Delete appliance"' +
@@ -739,7 +748,37 @@ function renderAppliances() {
       openAppliance(card.dataset.applianceCard);
     });
   });
+  // Handle Edit button clicks without opening appliance details.
+  $$("[data-edit-appliance]").forEach(button => {
+    button.addEventListener("click", event => {
+      event.stopPropagation();
 
+      const applianceId = button.dataset.editAppliance;
+      const appliance = appliances.find(
+        item => String(item.id) === String(applianceId)
+);
+
+if (!appliance) {
+  return;
+}
+
+applianceBeingEdited = appliance.id;
+
+const form = $("#applianceForm");
+
+form.elements["name"].value = appliance.name;
+form.elements["type"].value = appliance.type;
+form.elements["brand"].value = appliance.brand || "";
+form.elements["model"].value = appliance.model || "";
+form.elements["category"].value = appliance.category;
+form.elements["purchase"].value = appliance.purchaseDate || "";
+form.elements["last"].value = appliance.lastMaintenanceDate || "";
+
+$("#applianceModalTitle").textContent = "Edit appliance";
+
+openModal("applianceModal");
+    });
+  });
   // Open the confirmation modal without opening the appliance details.
   $$("[data-delete-appliance]").forEach(button => {
     button.addEventListener("click", event => {
@@ -1034,7 +1073,9 @@ $("#floatingAdd").addEventListener("click", () => {
 });
 
 $("#openApplianceModal").addEventListener("click", () => {
+  applianceBeingEdited = null;
   $("#applianceForm").reset();
+  $("#applianceModalTitle").textContent = "Add appliance";
   openModal("applianceModal");
 });
 
@@ -1167,14 +1208,22 @@ $("#applianceForm").addEventListener("submit", async event => {
     last_maintenance_date: formData.get("last") || null
   };
 
-  const {
-    data: savedAppliance,
-    error
-  } = await supabaseClient
-    .from("appliances")
-    .insert(applianceToInsert)
-    .select()
-    .single();
+  let query = supabaseClient.from("appliances");
+
+if (applianceBeingEdited !== null) {
+  query = query
+    .update(applianceToInsert)
+    .eq("appliance_id", applianceBeingEdited);
+} else {
+  query = query.insert(applianceToInsert);
+}
+
+const {
+  data: savedAppliance,
+  error
+} = await query
+  .select()
+  .single();
 
   if (error) {
     console.error("Appliance save error:", error);
@@ -1195,6 +1244,8 @@ $("#applianceForm").addEventListener("submit", async event => {
     brand: savedAppliance.brand || "Unknown brand",
     model: savedAppliance.model || "Model not added",
     category: savedAppliance.category,
+    purchaseDate: savedAppliance.purchase_date || "",
+    lastMaintenanceDate: savedAppliance.last_maintenance_date || "",
 
     last: savedAppliance.last_maintenance_date
       ? formatDate(savedAppliance.last_maintenance_date).full
@@ -1211,16 +1262,33 @@ $("#applianceForm").addEventListener("submit", async event => {
   };
 
   // Add the new record to the beginning of the visible appliance list.
-  appliances.unshift(applianceForUI);
+  if (applianceBeingEdited !== null) {
+  const index = appliances.findIndex(
+    appliance => String(appliance.id) === String(applianceBeingEdited)
+  );
 
-  renderAppliances();
-  event.target.reset();
-  closeModal("applianceModal");
+  if (index !== -1) {
+    appliances[index] = applianceForUI;
+  }
+} else {
+  appliances.unshift(applianceForUI);
+}
+
+  const wasEditing = applianceBeingEdited !== null;
+
+applianceBeingEdited = null;
+
+renderAppliances();
+event.target.reset();
+$("#applianceModalTitle").textContent = "Add appliance";
+closeModal("applianceModal");
 
   showToast(
-    "Appliance added",
-    "Your appliance was saved successfully."
-  );
+  wasEditing ? "Appliance updated" : "Appliance added",
+  wasEditing
+    ? "Your appliance was updated successfully."
+    : "Your appliance was saved successfully."
+);
 });
 
 // Update the appliance list as the user searches or changes category.

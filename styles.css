@@ -431,3 +431,35 @@
 .appliance-no-results .appliance-empty-icon {
   background: var(--blue);
 }
+
+/* Keep the Add Appliance dialog usable on small screens. */
+@media (max-width: 600px) {
+  #applianceModal {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  #applianceModal .modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    margin: auto 0;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  #applianceModal .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  #applianceModal .modal-actions {
+    flex-direction: column;
+  }
+
+  #applianceModal .modal-actions .button {
+    width: 100%;
+  }
+}

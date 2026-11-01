@@ -669,7 +669,7 @@ function renderAppliances() {
     .map(appliance => {
       return (
         '<article class="appliance-card" data-appliance-card="' +
-          appliance.name +
+          appliance.id +
         '">' +
           '<div class="appliance-card-top">' +
             iconFor(appliance) +
@@ -722,10 +722,11 @@ function renderAppliances() {
 }
 
 // Fill the appliance detail page and navigate to it.
-function openAppliance(name) {
-  selectedAppliance =
-    appliances.find(appliance => appliance.name === name) ||
-    appliances[0];
+// Find the selected appliance by its unique database ID.
+function openAppliance(applianceId) {
+  selectedAppliance = appliances.find(
+    appliance => String(appliance.id) === String(applianceId)
+  );
 
   if (!selectedAppliance) {
     return;

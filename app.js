@@ -175,13 +175,23 @@ function showToast(title, message) {
   }, 3200);
 }
 
-// Open or close one of the page's modal dialogs.
+// Open or close a modal and prevent the page behind it from scrolling.
 function openModal(id) {
   $("#" + id).classList.add("open");
+  document.body.classList.add("modal-open");
 }
 
 function closeModal(id) {
   $("#" + id).classList.remove("open");
+
+  // Keep the page locked if another modal is still open.
+  const anotherModalIsOpen =
+    $(".modal-backdrop.open") !== null;
+
+  document.body.classList.toggle(
+    "modal-open",
+    anotherModalIsOpen
+  );
 }
 
 // Use the matching CSS status color for appliance and event labels.
@@ -990,7 +1000,7 @@ document.addEventListener("click", event => {
   }
 
   if (event.target.classList.contains("modal-backdrop")) {
-    event.target.classList.remove("open");
+    closeModal(event.target.id);
   }
 });
 

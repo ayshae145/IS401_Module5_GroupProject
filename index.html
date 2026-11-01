@@ -488,8 +488,8 @@
                       <span class="eyebrow">KEEPING A RECORD</span>
                       <h3>Maintenance history</h3>
                     </div>
-                    <button class="text-button">
-                      View all <span>→</span>
+                    <button class="text-button" id="viewMaintenanceHistoryButton" type="button">
+                     View all <span>→</span>
                     </button>
                   </div>
 
@@ -918,6 +918,13 @@
               Event name
               <input name="name" required placeholder="e.g. Clean dryer vent">
             </label>
+
+            <label>
+              Appliance
+              <select name="applianceId" id="eventAppliance">
+              <option value="">General home maintenance</option>
+              </select>
+              </label>
 
             <label>
               Category or appliance
